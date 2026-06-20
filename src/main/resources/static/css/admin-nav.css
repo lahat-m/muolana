@@ -1,0 +1,260 @@
+/* Desktop: row layout ─ */
+@media (min-width: 768px) {
+    body.app-page {
+        flex-direction: row;
+    }
+
+    .admin-sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.07);
+        background: var(--white);
+        overflow-y: auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    .admin-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        height: 100dvh;
+    }
+
+    .sidebar-backdrop {
+        display: none !important;
+    }
+
+    .sidebar-close {
+        display: none !important;
+    }
+
+    .hamburger {
+        display: none !important;
+    }
+
+    .bottom-nav {
+        display: none !important;
+    }
+
+    .toast {
+        bottom: 24px;
+    }
+}
+
+/* Mobile: overlay sidebar  */
+@media (max-width: 767px) {
+    .admin-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(82vw, 260px);
+        z-index: 300;
+        background: var(--white);
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.10);
+        overflow-y: auto;
+    }
+
+    .admin-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .admin-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .bottom-nav {
+        display: none !important;
+    }
+}
+
+/* Backdrop  */
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.38);
+    z-index: 299;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.sidebar-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Sidebar brand header  */
+.sidebar-brand-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 17px 14px 13px;
+    flex-shrink: 0;
+}
+
+.sb-logo {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.sb-brand-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-brand {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+
+.sidebar-brand-sub {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+}
+
+.sidebar-close {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--grey);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--black);
+    transition: background 0.15s;
+}
+
+.sidebar-close:hover {
+    background: rgba(0, 0, 0, 0.10);
+}
+
+/* Sidebar nav  */
+.sidebar-nav {
+    flex: 1;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.58);
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+    white-space: nowrap;
+}
+
+.sidebar-nav-item:hover {
+    background: var(--grey);
+    color: var(--black);
+}
+
+.sidebar-nav-item.active {
+    background: rgba(52, 186, 235, 0.10);
+    color: var(--blue);
+    font-weight: 600;
+}
+
+.sidebar-nav-item img {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+    padding: 8px;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+}
+
+.sidebar-logout {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.38);
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+    cursor: pointer;
+}
+
+.sidebar-logout:hover {
+    background: var(--grey);
+    color: rgba(0, 0, 0, 0.70);
+}
+
+.sidebar-logout img {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* Hamburger button  */
+.hamburger {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--grey);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: background 0.15s;
+}
+
+.hamburger:hover {
+    background: rgba(0, 0, 0, 0.10);
+}
+
+.hamburger span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: var(--black);
+    border-radius: 2px;
+    pointer-events: none;
+}

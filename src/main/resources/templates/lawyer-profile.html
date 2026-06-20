@@ -1,0 +1,369 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Advocate profile · Muolana</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/lawyer-profile.css}"/>
+</head>
+<body class="app-page">
+
+<!-- Header -->
+<header class="app-header">
+    <a href="/lawyers" class="back-btn" aria-label="Back"><img th:src="@{/icons/arrow-left-icon.svg}" width="20" height="20" alt="" aria-hidden="true"/></a>
+    <span class="header-title">Advocate profile</span>
+    <button class="share-btn" id="shareBtn" aria-label="Share profile">Share</button>
+</header>
+
+<!-- Scrollable content -->
+<div class="content-scroll">
+    <div class="content-inner" id="profileContent">
+
+        <!-- Profile hero skeleton -->
+        <div class="profile-hero" id="heroSection">
+            <div class="avatar-lg sk sk-avatar-lg"></div>
+            <div class="sk sk-profile-name"></div>
+            <div class="sk sk-profile-sub"></div>
+        </div>
+
+        <!-- Stats skeleton -->
+        <div class="stats-row sk-faded" id="statsRow">
+            <div class="stat-cell">
+                <div class="sk sk-stat-val"></div>
+                <div class="sk sk-stat-lbl"></div>
+            </div>
+            <div class="stat-cell">
+                <div class="sk sk-stat-val"></div>
+                <div class="sk sk-stat-lbl"></div>
+            </div>
+            <div class="stat-cell">
+                <div class="sk sk-stat-val"></div>
+                <div class="sk sk-stat-lbl"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Sticky action bar -->
+<div class="action-bar">
+    <div class="action-bar-inner">
+        <a class="act-btn primary" id="callBtn" href="#" aria-disabled="true">Call</a>
+        <a class="act-btn" id="bookBtn" href="#">Book</a>
+    </div>
+</div>
+
+<script>
+    const AVATAR_COLORS = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
+    const LAST_QUERY_KEY = 'muolana_last_query';
+
+    // Extract lawyer ID from URL: /lawyers/{id}
+    const lawyerId = window.location.pathname.split('/').filter(Boolean).pop();
+
+    // Load data
+
+    async function load() {
+        try {
+            const [lawyer, reviewsPage] = await Promise.all([
+                fetch('/api/v1/lawyers/' + lawyerId).then(response => { if (!response.ok) throw new Error(response.status); return response.json(); }),
+                fetch('/api/v1/lawyers/' + lawyerId + '/reviews?size=3').then(response => response.ok ? response.json() : { content: [] })
+            ]);
+            render(lawyer, reviewsPage.content || []);
+        } catch {
+            document.getElementById('profileContent').innerHTML =
+                '<div style="text-align:center;padding:48px 20px;color:rgba(0,0,0,0.45);font-size:14px">' +
+                '<strong style="display:block;font-size:16px;color:#000;margin-bottom:6px">Profile not found</strong>' +
+                'This lawyer may no longer be listed.</div>';
+        }
+    }
+
+    // Render
+
+    function render(lawyer, reviews) {
+        const inner = document.getElementById('profileContent');
+        inner.innerHTML = '';
+
+        // Hero
+        const hero = document.createElement('div');
+        hero.className = 'profile-hero';
+
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'avatar-lg';
+        const avatarImage = document.createElement('img');
+        avatarImage.src = '/icons/lawyer-profile-icon.svg';
+        avatarImage.width = 42; avatarImage.height = 42;
+        avatarImage.alt = ''; avatarImage.setAttribute('aria-hidden', 'true');
+        avatarContainer.appendChild(avatarImage);
+
+        const name = document.createElement('p');
+        name.className = 'profile-name';
+        name.textContent = lawyer.fullName;
+
+        const specs = lawyer.specialisations || [];
+
+        if (lawyer.lawFirmName) {
+            const firm = document.createElement('p');
+            firm.className = 'profile-firm';
+            firm.textContent = lawyer.lawFirmName;
+            hero.appendChild(firm);
+        }
+
+        const subtitleText = document.createElement('p');
+        subtitleText.className = 'profile-sub';
+        const descParts = [specs.slice(0, 2).join(' & ') + (specs.length ? ' Law' : ''), lawyer.locationCity].filter(Boolean);
+        subtitleText.textContent = descParts.join(' · ') || 'General Practice';
+
+        const badges = document.createElement('div');
+        badges.className = 'badges';
+        if (lawyer.isVerified) {
+            const verifiedBadge = document.createElement('span');
+            verifiedBadge.className = 'badge verified';
+            verifiedBadge.textContent = 'SSLS Verified';
+            badges.appendChild(verifiedBadge);
+        }
+        const feeBadge = document.createElement('span');
+        feeBadge.className = 'badge fee';
+        feeBadge.textContent = feeLbl(lawyer.feeType);
+        badges.appendChild(feeBadge);
+
+        hero.appendChild(avatarContainer); hero.appendChild(name); hero.appendChild(subtitleText); hero.appendChild(badges);
+        inner.appendChild(hero);
+
+        // Stats
+        const statsRow = document.createElement('div');
+        statsRow.className = 'stats-row';
+
+        const createdYear = lawyer.createdAt ? new Date(lawyer.createdAt).getFullYear() : null;
+        const expYears    = createdYear ? Math.max(1, new Date().getFullYear() - createdYear) : null;
+
+        [
+            { value: lawyer.reviewCount || '—', label: 'Cases helped', cls: '' },
+            { value: lawyer.averageRating ? Number(lawyer.averageRating).toFixed(1) : '—', label: 'Rating', cls: 'orange' },
+            { value: expYears ? expYears + ' yrs' : '—', label: 'Experience', cls: '' },
+        ].forEach(statItem => {
+            const cell = document.createElement('div');
+            cell.className = 'stat-cell';
+            const statValueEl = document.createElement('span');
+            statValueEl.className = 'stat-num' + (statItem.cls ? ' ' + statItem.cls : '');
+            statValueEl.textContent = statItem.value;
+            const statLabelEl = document.createElement('span');
+            statLabelEl.className = 'stat-lbl';
+            statLabelEl.textContent = statItem.label;
+            cell.appendChild(statValueEl); cell.appendChild(statLabelEl);
+            statsRow.appendChild(cell);
+        });
+        inner.appendChild(statsRow);
+
+        // Specialisations
+        if (specs.length) {
+            const sec = section('Specialisations');
+            const pills = document.createElement('div');
+            pills.className = 'spec-pills';
+            specs.forEach(specItem => {
+                const specPill = document.createElement('span');
+                specPill.className = 'spec-pill';
+                specPill.textContent = specItem;
+                pills.appendChild(specPill);
+            });
+            sec.appendChild(pills);
+            inner.appendChild(sec);
+        }
+
+        // Languages
+        const langs = lawyer.languages || [];
+        if (langs.length) {
+            const sec = section('Languages');
+            const langParagraph = document.createElement('p');
+            langParagraph.className = 'lang-text';
+            langParagraph.textContent = langs.join(' · ');
+            sec.appendChild(langParagraph);
+            inner.appendChild(sec);
+        }
+
+        // Location
+        if (lawyer.locationCity) {
+            const sec = section('Location');
+            const row = document.createElement('div');
+            row.className = 'location-row';
+            const locationText = document.createElement('span');
+            locationText.className = 'location-text';
+            locationText.textContent = lawyer.locationCity + ' — available Mon–Fri';
+            row.appendChild(locationText);
+            sec.appendChild(row);
+            inner.appendChild(sec);
+        }
+
+        // Bio
+        if (lawyer.bio) {
+            const sec = section('About');
+            const bioParagraph = document.createElement('p');
+            bioParagraph.className = 'bio-text';
+            bioParagraph.textContent = lawyer.bio;
+            sec.appendChild(p);
+            inner.appendChild(sec);
+        }
+
+        // Context from your chat
+        const lastQuery = localStorage.getItem(LAST_QUERY_KEY);
+        if (lastQuery) {
+            const sec = section('Context from your chat');
+            const box = document.createElement('div');
+            box.className = 'chat-context';
+
+            const quote = document.createElement('p');
+            quote.className = 'chat-context-quote';
+            quote.textContent = lastQuery;
+
+            const acts = document.createElement('div');
+            acts.className = 'chat-context-actions';
+            acts.innerHTML = 'Shared with your consent&nbsp;·&nbsp;';
+            const removeLink = document.createElement('a');
+            removeLink.href = '#';
+            removeLink.textContent = 'Remove';
+            removeLink.addEventListener('click', clickEvent => {
+                clickEvent.preventDefault();
+                localStorage.removeItem(LAST_QUERY_KEY);
+                sec.remove();
+            });
+            acts.appendChild(removeLink);
+
+            box.appendChild(quote); box.appendChild(acts);
+            sec.appendChild(box);
+            inner.appendChild(sec);
+        }
+
+        // Reviews
+        const reviewSec = section('Client reviews');
+        if (reviews.length === 0) {
+            const noReviewsText = document.createElement('p');
+            noReviewsText.className = 'no-reviews';
+            noReviewsText.textContent = 'No reviews yet.';
+            reviewSec.appendChild(noReviewsText);
+        } else {
+            const list = document.createElement('div');
+            list.className = 'reviews-list';
+            reviews.forEach(review => list.appendChild(buildReview(review)));
+            reviewSec.appendChild(list);
+        }
+        inner.appendChild(reviewSec);
+
+        // Wire action buttons
+        const phone = findContact(lawyer.contactMethods, 'PHONE');
+        const callBtn = document.getElementById('callBtn');
+
+        if (phone) {
+            callBtn.href = 'tel:' + phone;
+            callBtn.removeAttribute('aria-disabled');
+        }
+    }
+
+    // Helpers
+
+    function section(title) {
+        const wrap = document.createElement('div');
+        wrap.className = 'section';
+        const sectionTitleElement = document.createElement('p');
+        sectionTitleElement.className = 'section-title';
+        sectionTitleElement.textContent = title;
+        wrap.appendChild(sectionTitleElement);
+        return wrap;
+    }
+
+    function buildReview(review) {
+        const card = document.createElement('div');
+        card.className = 'review-card';
+
+        const stars = document.createElement('div');
+        stars.className = 'stars';
+        for (let i = 1; i <= 5; i++) {
+            const starSpan = document.createElement('span');
+            starSpan.className = 'star ' + (i <= review.rating ? 'filled' : 'empty');
+            starSpan.textContent = '★';
+            stars.appendChild(starSpan);
+        }
+
+        const reviewTextElement = document.createElement('p');
+        reviewTextElement.className = 'review-text';
+        reviewTextElement.textContent = review.reviewText || '';
+
+        const reviewMetaElement = document.createElement('p');
+        reviewMetaElement.className = 'review-meta';
+        reviewMetaElement.textContent = (review.isAnonymous ? 'Anonymous' : 'Verified user') + ' · ' + timeAgo(review.createdAt);
+
+        card.appendChild(stars); card.appendChild(reviewTextElement); card.appendChild(reviewMetaElement);
+        return card;
+    }
+
+    function initials(name) {
+        const clean = name.replace(/^(Advocate|Adv\.|Dr\.|Prof\.|Barrister)\s+/i, '').trim();
+        const parts = clean.split(/\s+/);
+        return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase();
+    }
+
+    function feeLbl(feeType) {
+        if (feeType === 'FREE') return 'Free'; if (feeType === 'PRO_BONO') return 'Pro Bono'; return 'Paid';
+    }
+
+    function findContact(methods, channel) {
+        if (!methods) return null;
+        return (methods.find(method => method.channel === channel && method.isPrimary) || methods.find(method => method.channel === channel))?.value || null;
+    }
+
+    function timeAgo(iso) {
+        if (!iso) return '';
+        const diff = Date.now() - new Date(iso).getTime();
+        const mins  = Math.floor(diff / 60000);
+        const hours = Math.floor(mins / 60);
+        const days  = Math.floor(hours / 24);
+        const weeks = Math.floor(days / 7);
+        const months = Math.floor(days / 30);
+        if (months >= 1) return months + ' month' + (months > 1 ? 's' : '') + ' ago';
+        if (weeks  >= 1) return weeks  + ' week'  + (weeks  > 1 ? 's' : '') + ' ago';
+        if (days   >= 1) return days   + ' day'   + (days   > 1 ? 's' : '') + ' ago';
+        if (hours  >= 1) return hours  + ' hour'  + (hours  > 1 ? 's' : '') + ' ago';
+        return 'just now';
+    }
+
+    // Share
+
+    document.getElementById('shareBtn').addEventListener('click', async () => {
+        const url = window.location.href;
+        if (navigator.share) {
+            try { await navigator.share({ title: document.title, url }); return; } catch {}
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+            showToast('Link copied to clipboard');
+        } catch { showToast('Copy this URL: ' + url); }
+    });
+
+    // Toast
+
+    function showToast(msg) {
+        let toastElement = document.getElementById('_toast');
+        if (!toastElement) {
+            toastElement = document.createElement('div');
+            toastElement.id = '_toast';
+            Object.assign(toastElement.style, {
+                position:'fixed', bottom:'90px', left:'50%',
+                transform:'translateX(-50%) translateY(20px)',
+                padding:'10px 18px', borderRadius:'24px',
+                fontSize:'14px', fontWeight:'600', color:'#fff',
+                background:'rgba(0,0,0,0.80)', whiteSpace:'nowrap',
+                opacity:'0', transition:'opacity 0.3s,transform 0.3s',
+                pointerEvents:'none', zIndex:'500'
+            });
+            document.body.appendChild(toastElement);
+        }
+        toastElement.textContent = msg;
+        toastElement.style.opacity = '1'; toastElement.style.transform = 'translateX(-50%) translateY(0)';
+        clearTimeout(toastElement._timer);
+        toastElement._timer = setTimeout(() => { toastElement.style.opacity = '0'; toastElement.style.transform = 'translateX(-50%) translateY(20px)'; }, 2800);
+    }
+
+    // Boot
+    load();
+</script>
+</body>
+</html>

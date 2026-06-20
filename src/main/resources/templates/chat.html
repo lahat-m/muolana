@@ -1,0 +1,569 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Chat · Digital Muolana</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/chat.css}"/>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+</head>
+<body class="app-page">
+
+<!-- Header -->
+<header class="app-header">
+    <a aria-label="Back" class="back-btn" href="/"><img alt="" aria-hidden="true" height="20"
+                                                        th:src="@{/icons/arrow-left-icon.svg}" width="20"/></a>
+    <img alt="" aria-hidden="true" height="34" style="flex-shrink:0" th:src="@{/icons/logo-icon.svg}" width="34"/>
+    <div class="session-info">
+        <div class="session-title" id="sessionTitle">Digital Muolana</div>
+        <div class="session-sub" id="sessionSub">Connecting…</div>
+    </div>
+    <button aria-label="Open menu" class="menu-btn" id="menuBtn">
+        <img alt="" aria-hidden="true" height="22" src="/icons/menu-icon.svg" width="22"/>
+    </button>
+</header>
+
+<!-- Messages -->
+<div class="messages-wrap" id="messagesWrap">
+    <div aria-live="polite" class="messages-inner" id="messages"></div>
+</div>
+
+<!-- Input -->
+<div class="input-wrap">
+    <div class="input-inner">
+        <input autocomplete="off" disabled id="chatInput" placeholder="Starting session…" type="text"/>
+        <button aria-label="Send" class="send-btn" disabled id="sendBtn">
+            <img alt="" aria-hidden="true" height="20" src="/icons/chat-icon.svg" width="20"/>
+        </button>
+    </div>
+</div>
+
+<!-- S-05 Sidebar overlay -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<aside aria-label="Menu" class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div aria-hidden="true" class="sidebar-logo">
+            <img alt="" aria-hidden="true" height="22" src="/icons/logo-icon.svg" width="22"/>
+        </div>
+        <span class="sidebar-name">Digital Muolana</span>
+        <button aria-label="Close menu" class="sidebar-close" id="sidebarClose"><img alt=""
+                                                                                     aria-hidden="true" height="16" src="/icons/cancel-icon.svg"
+                                                                                     width="16"/></button>
+    </div>
+
+    <div class="sidebar-body">
+        <!-- New chat -->
+        <a class="new-chat-btn" href="/chat">New chat</a>
+
+        <!-- Recent chats -->
+        <div class="sidebar-section">
+            <div class="section-label">Recent Chats</div>
+            <div id="recentChats"></div>
+        </div>
+
+        <!-- Resources -->
+        <div class="sidebar-section">
+            <div class="section-label">Resources</div>
+            <a class="sidebar-item" href="/lawyers">
+                <img alt="" aria-hidden="true" height="18" th:src="@{/icons/lawyer-icon.svg}" width="18"/>
+                Seeking Legal Advice? Talk to a Lawyer
+            </a>
+            <a class="sidebar-item" href="/how-it-works">
+                <img alt="" aria-hidden="true" height="18" th:src="@{/icons/file-icon.svg}" width="18"/>
+                Laws in the database
+            </a>
+            <a class="sidebar-item" href="/">
+                <img alt="" aria-hidden="true" height="18" th:src="@{/icons/about-info-icon.svg}" width="18"/>
+                About Muolana
+            </a>
+        </div>
+
+        <!-- Legal -->
+        <div class="sidebar-section">
+            <div class="section-label">Legal</div>
+            <a class="sidebar-item" href="#">
+                <img alt="" aria-hidden="true" height="18" th:src="@{/icons/terms-of-use-icon.svg}" width="18"/>
+                Terms of use &amp; disclaimer
+            </a>
+            <a class="sidebar-item" href="#">
+                <img alt="" aria-hidden="true" height="18" th:src="@{/icons/privacy-policy-icon.svg}" width="18"/>
+                Privacy policy
+            </a>
+        </div>
+    </div>
+</aside>
+
+<script>
+    const SESSIONS_KEY = 'muolana_sessions';
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const messages = document.getElementById('messages');
+    const sessionTitle = document.getElementById('sessionTitle');
+    const sessionSub = document.getElementById('sessionSub');
+    const wrap = document.getElementById('messagesWrap');
+
+    let sessionId = null;
+    let lastUserQuery = '';
+
+    // Sidebar────
+
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    document.getElementById('menuBtn').addEventListener('click', openSidebar);
+    document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', keyboardEvent => {
+        if (keyboardEvent.key === 'Escape') closeSidebar();
+    });
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        sidebarBackdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        renderRecentChats();
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        sidebarBackdrop.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // Recent chats (localStorage)
+
+    async function deleteSession(id) {
+        localStorage.setItem(SESSIONS_KEY, JSON.stringify(getSessions().filter(session => session.id !== id)));
+        renderRecentChats();
+        try {
+            await fetch('/api/v1/sessions/' + id, {method: 'DELETE'});
+        } catch { /* best effort */
+        }
+    }
+
+    function getSessions() {
+        try {
+            return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    function saveSession(id, title) {
+        const sessions = getSessions().filter(session => session.id !== id);
+        sessions.unshift({id, title, at: Date.now()});
+        localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions.slice(0, 20)));
+    }
+
+    function updateSessionTitle(id, title) {
+        const sessions = getSessions();
+        const foundSession = sessions.find(storedSession => storedSession.id === id);
+        if (foundSession) {
+            foundSession.title = title;
+            localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+        }
+    }
+
+    function renderRecentChats() {
+        const container = document.getElementById('recentChats');
+        container.innerHTML = '';
+        const sessions = getSessions();
+
+        if (!sessions.length) {
+            const empty = document.createElement('p');
+            empty.className = 'no-recents';
+            empty.textContent = 'No recent chats yet.';
+            container.appendChild(empty);
+            return;
+        }
+
+        sessions.slice(0, 8).forEach(session => {
+            const item = document.createElement('div');
+            item.className = 'recent-item';
+
+            const link = document.createElement('a');
+            link.className = 'recent-item-link';
+            link.href = '/chat?session=' + session.id;
+            link.innerHTML = '<img src="/icons/chat-icon.svg" width="16" height="16" alt="" aria-hidden="true"/><span></span>';
+            link.querySelector('span').textContent = session.title || 'Untitled chat';
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'recent-del-btn';
+            delBtn.setAttribute('aria-label', 'Delete chat');
+            delBtn.innerHTML = '<img src="/icons/cancel-icon.svg" width="12" height="12" alt="" aria-hidden="true"/>';
+            delBtn.addEventListener('click', clickEvent => {
+                clickEvent.stopPropagation();
+                deleteSession(session.id);
+            });
+
+            item.appendChild(link);
+            item.appendChild(delBtn);
+            container.appendChild(item);
+        });
+    }
+
+    // Session init
+
+    initSession();
+
+    async function initSession() {
+        const resumeId = new URLSearchParams(window.location.search).get('session');
+        if (resumeId) {
+            const sessionCheck = await fetch('/api/v1/sessions/' + resumeId);
+            if (!sessionCheck.ok) {
+                // Stale session (server restart or DB reset) — drop it and start fresh
+                localStorage.setItem(SESSIONS_KEY, JSON.stringify(getSessions().filter(s => s.id !== resumeId)));
+                history.replaceState(null, '', '/chat');
+            } else {
+                sessionId = resumeId;
+                const savedSession = getSessions().find(storedSession => storedSession.id === resumeId);
+                if (savedSession?.title && savedSession.title !== 'New chat') sessionTitle.textContent = savedSession.title;
+                sessionSub.textContent = 'Active session';
+                chatInput.placeholder = 'Ask a legal question…';
+                setInputEnabled(true);
+                await loadMessages(resumeId);
+                return;
+            }
+        }
+        try {
+            const response = await fetch('/api/v1/sessions', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            sessionId = data.id;
+            history.replaceState(null, '', '/chat?session=' + sessionId);
+            sessionSub.textContent = 'Active session';
+            saveSession(sessionId, 'New chat');
+            chatInput.placeholder = 'Ask a legal question…';
+            setInputEnabled(true);
+        } catch (error) {
+            sessionSub.textContent = 'Connection failed — refresh to retry';
+            chatInput.placeholder = 'Session unavailable — refresh the page';
+        }
+    }
+
+    // Send───────
+
+    chatInput.addEventListener('keydown', keyboardEvent => {
+        if (keyboardEvent.key === 'Enter' && !keyboardEvent.shiftKey) {
+            keyboardEvent.preventDefault();
+            send();
+        }
+    });
+    sendBtn.addEventListener('click', send);
+
+    async function send() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        if (!sessionId) {
+            showError('Session not ready, please wait a moment.');
+            return;
+        }
+
+        lastUserQuery = text;
+        localStorage.setItem('muolana_last_query', text);
+        chatInput.value = '';
+        chatInput.placeholder = 'Ask a legal question…';
+        setInputEnabled(false);
+
+        appendUserBubble(text);
+
+        // Update session title on first message
+        if (sessionTitle.textContent === 'Digital Muolana' || sessionTitle.textContent === 'New chat') {
+            const title = text.length > 38 ? text.slice(0, 38) + '…' : text;
+            sessionTitle.textContent = title;
+            updateSessionTitle(sessionId, title);
+        }
+
+        const typingEl = appendTyping();
+
+        let msgId;
+        try {
+            const response = await fetch('/api/v1/sessions/' + sessionId + '/messages', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content: text})
+            });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            msgId = data.id;
+        } catch {
+            typingEl.remove();
+            showError('Could not send message. Please try again.');
+            setInputEnabled(true);
+            return;
+        }
+
+        const {row, bubble, answerEl, citationsEl} = appendAssistantBubble();
+        const citations = [];
+        let accText = '';
+        let revealed = false;
+
+        function reveal() {
+            if (revealed) return;
+            revealed = true;
+            typingEl.remove();
+            row.style.display = '';
+            scrollBottom();
+        }
+
+        const es = new EventSource('/api/v1/sessions/' + sessionId + '/messages/' + msgId + '/stream');
+
+        es.onmessage = sseEvent => {
+            const evt = JSON.parse(sseEvent.data);
+
+            if (evt.type === 'chunk') {
+                reveal();
+                accText += evt.content;
+                answerEl.textContent = accText;
+                scrollBottom();
+            }
+            if (evt.type === 'citation') {
+                citations.push({ ref: evt.ref, url: evt.url || null });
+            }
+            if (evt.type === 'not_found') {
+                reveal();
+                buildNotFound(bubble, answerEl);
+                es.close();
+                setInputEnabled(true);
+                chatInput.placeholder = 'Ask another question…';
+            }
+            if (evt.type === 'done') {
+                reveal();
+                answerEl.innerHTML = marked.parse(accText);
+                finalise(bubble, citationsEl, citations);
+                es.close();
+                setInputEnabled(true);
+            }
+            if (evt.type === 'error') {
+                reveal();
+                if (!accText) answerEl.textContent = 'An error occurred. Please try again.';
+                es.close();
+                setInputEnabled(true);
+            }
+        };
+
+        es.onerror = () => {
+            reveal();
+            if (!answerEl.textContent) answerEl.textContent = 'Stream interrupted. Please try again.';
+            es.close();
+            setInputEnabled(true);
+            scrollBottom();
+        };
+    }
+
+    // S-03 Not-found─────────────
+
+    function buildNotFound(bubble, answerEl) {
+        answerEl.remove();
+
+        const badge = document.createElement('div');
+        badge.className = 'not-found-badge';
+        badge.textContent = 'Law not in my database';
+
+        const primary = document.createElement('p');
+        primary.className = 'answer-text';
+        primary.textContent = "This topic isn't currently in my database. I won't guess — a wrong legal answer is worse than no answer.";
+
+        const secondary = document.createElement('p');
+        secondary.className = 'answer-text-muted';
+        secondary.textContent = 'For authoritative information, contact the relevant Ministry or a registered advocate.';
+
+        const connectBtn = document.createElement('a');
+        connectBtn.className = 'connect-btn';
+        connectBtn.href = '/lawyers';
+        const cbIcon = document.createElement('img');
+        cbIcon.src = '/icons/lawyer-profile-icon.svg';
+        cbIcon.width = 18;
+        cbIcon.height = 18;
+        cbIcon.alt = '';
+        cbIcon.setAttribute('aria-hidden', 'true');
+        connectBtn.appendChild(cbIcon);
+        connectBtn.appendChild(document.createTextNode('Seeking Legal Advice? Talk to a Lawyer'));
+
+        const note = document.createElement('div');
+        note.className = 'legal-note';
+        note.textContent = 'Legal information only, not legal advice.';
+
+        bubble.appendChild(badge);
+        bubble.appendChild(primary);
+        bubble.appendChild(secondary);
+        bubble.appendChild(connectBtn);
+        bubble.appendChild(note);
+        appendSuggestionsCard();
+        appendTalkLawyerLink();
+        scrollBottom();
+    }
+
+    function appendSuggestionsCard() {
+        const SUGGESTIONS = [
+            'Business registration & Companies Act',
+            'Land ownership & Land Act',
+            'Marriage & family law',
+            'Constitutional rights',
+        ];
+        const card = document.createElement('div');
+        card.className = 'suggestions-card';
+        const title = document.createElement('p');
+        title.className = 'suggestions-title';
+        title.textContent = 'Try asking about:';
+        card.appendChild(title);
+        const ul = document.createElement('ul');
+        ul.className = 'suggestions-list';
+        SUGGESTIONS.forEach(text => {
+            const li = document.createElement('li');
+            li.textContent = text;
+            li.addEventListener('click', () => {
+                chatInput.value = text;
+                chatInput.focus();
+            });
+            ul.appendChild(li);
+        });
+        card.appendChild(ul);
+        messages.appendChild(card);
+    }
+
+    function appendTalkLawyerLink() {
+        const row = document.createElement('div');
+        row.className = 'talk-lawyer-row';
+        const link = document.createElement('a');
+        link.className = 'talk-lawyer-link';
+        link.href = '/lawyers';
+        link.textContent = 'Talk to a lawyer about this →';
+        row.appendChild(link);
+        messages.appendChild(row);
+    }
+
+    // S-02 Answered
+
+    function finalise(bubble, citationsEl, citations) {
+        citations.forEach(({ ref, url }) => {
+            const pill = url ? document.createElement('a') : document.createElement('span');
+            pill.className = 'citation-pill';
+            pill.textContent = ref;
+            if (url) {
+                pill.href = url;
+                pill.target = '_blank';
+                pill.rel = 'noopener noreferrer';
+            }
+            citationsEl.appendChild(pill);
+        });
+
+        const hr = document.createElement('hr');
+        hr.className = 'answer-divider';
+        bubble.appendChild(hr);
+
+        const lawyerLink = document.createElement('a');
+        lawyerLink.className = 'lawyer-link';
+        lawyerLink.href = '/lawyers';
+        const llIcon = document.createElement('img');
+        llIcon.src = '/icons/lawyer-profile-icon.svg';
+        llIcon.width = 16;
+        llIcon.height = 16;
+        llIcon.alt = '';
+        llIcon.setAttribute('aria-hidden', 'true');
+        lawyerLink.appendChild(llIcon);
+        lawyerLink.appendChild(document.createTextNode('Seeking Legal Advice? Talk to a Lawyer'));
+        bubble.appendChild(lawyerLink);
+
+        const note = document.createElement('div');
+        note.className = 'legal-note';
+        note.textContent = 'Legal information only. Not legal advice. Verify with a licensed advocate.';
+        bubble.appendChild(note);
+        scrollBottom();
+    }
+
+    // DOM helpers
+
+    function appendUserBubble(text) {
+        const row = document.createElement('div');
+        row.className = 'bubble-row user';
+        row.innerHTML = '<div class="user-bubble"></div>';
+        row.querySelector('.user-bubble').textContent = text;
+        messages.appendChild(row);
+        scrollBottom();
+    }
+
+    function appendTyping() {
+        const row = document.createElement('div');
+        row.className = 'bubble-row assistant';
+        row.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+        messages.appendChild(row);
+        scrollBottom();
+        return row;
+    }
+
+    function appendAssistantBubble() {
+        const row = document.createElement('div');
+        row.className = 'bubble-row assistant';
+        row.style.display = 'none';
+        const bubble = document.createElement('div');
+        bubble.className = 'assistant-bubble';
+        const answerEl = document.createElement('div');
+        answerEl.className = 'answer-text';
+        const citationsEl = document.createElement('div');
+        citationsEl.className = 'citations';
+        bubble.appendChild(answerEl);
+        bubble.appendChild(citationsEl);
+        row.appendChild(bubble);
+        messages.appendChild(row);
+        return {row, bubble, answerEl, citationsEl};
+    }
+
+    function showError(msg) {
+        const row = document.createElement('div');
+        row.className = 'bubble-row assistant';
+        const errorBubble = document.createElement('div');
+        errorBubble.className = 'answer-text';
+        errorBubble.style.color = 'rgba(0,0,0,0.50)';
+        errorBubble.textContent = msg;
+        row.appendChild(errorBubble);
+        messages.appendChild(row);
+        scrollBottom();
+    }
+
+    function setInputEnabled(enabled) {
+        chatInput.disabled = !enabled;
+        sendBtn.disabled = !enabled;
+        if (enabled) chatInput.focus();
+    }
+
+    function scrollBottom() {
+        wrap.scrollTop = wrap.scrollHeight;
+    }
+
+    async function loadMessages(id) {
+        try {
+            const response = await fetch('/api/v1/sessions/' + id + '/messages');
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const body = await response.json();
+            const msgs = Array.isArray(body) ? body : (body.data || []);
+            msgs.forEach(msg => {
+                const role = (msg.role || '').toUpperCase();
+                if (role === 'USER') appendUserBubble(msg.content);
+                else if (role === 'ASSISTANT') appendSavedAssistantBubble(msg.content);
+            });
+            if (msgs.length) scrollBottom();
+        } catch {
+            sessionSub.textContent = 'Could not load history';
+        }
+    }
+
+    function appendSavedAssistantBubble(content) {
+        const row = document.createElement('div');
+        row.className = 'bubble-row assistant';
+        const bubble = document.createElement('div');
+        bubble.className = 'assistant-bubble';
+        const answerEl = document.createElement('div');
+        answerEl.className = 'answer-text';
+        answerEl.innerHTML = marked.parse(content || '');
+        bubble.appendChild(answerEl);
+        row.appendChild(bubble);
+        messages.appendChild(row);
+    }
+</script>
+</body>
+</html>

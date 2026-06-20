@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Analytics · Muolana Admin</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-nav.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-analytics.css}"/>
+</head>
+<body class="app-page">
+
+<!-- Sidebar -->
+<aside aria-label="Admin navigation" class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-brand-row">
+        <img alt="" aria-hidden="true" class="sb-logo" src="/icons/logo-icon.svg"/>
+        <div class="sb-brand-text">
+            <div class="sidebar-brand">Muolana</div>
+            <div class="sidebar-brand-sub">Admin</div>
+        </div>
+        <button aria-label="Close menu" class="sidebar-close" id="sidebarClose"><img alt=""
+                                                                                     aria-hidden="true" height="16"
+                                                                                     src="/icons/cancel-icon.svg"
+                                                                                     width="16"/></button>
+    </div>
+    <nav class="sidebar-nav">
+        <a class="sidebar-nav-item" href="/admin/dashboard">
+            <img alt="" aria-hidden="true" src="/icons/home-icon.svg"/>
+            Dashboard
+        </a>
+        <a class="sidebar-nav-item" href="/admin/documents">
+            <img alt="" aria-hidden="true" src="/icons/file-icon.svg"/>
+            Documents
+        </a>
+        <a class="sidebar-nav-item" href="/admin/lawyers">
+            <img alt="" aria-hidden="true" src="/icons/lawyer-icon.svg"/>
+            Lawyers
+        </a>
+        <a aria-current="page" class="sidebar-nav-item active" href="/admin/analytics">
+            <img alt="" aria-hidden="true" src="/icons/analytics-icon.svg"/>
+            Analytics
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a class="sidebar-logout" id="logoutBtn" role="button" tabindex="0">
+            <img alt="" aria-hidden="true" src="/icons/logout-icon.svg"/>
+            Logout
+        </a>
+    </div>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- Main -->
+<div class="admin-main">
+
+    <header class="app-header">
+        <button aria-label="Open menu" class="hamburger" id="hamburgerBtn">
+            <span></span><span></span><span></span>
+        </button>
+        <span class="header-title">Analytics</span>
+        <button class="range-pill" id="rangePill">This month</button>
+    </header>
+
+    <!-- Scrollable content -->
+    <div class="content-scroll">
+        <div class="content-inner">
+
+            <!-- Error -->
+            <div class="error-banner" id="errorBanner">
+                <span id="errorText">Could not load analytics data.</span>
+            </div>
+
+            <!-- Top stats -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="statQueries">—</div>
+                    <div class="stat-label">Queries this month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value blue" id="statConnects">—</div>
+                    <div class="stat-label">Lawyer connects</div>
+                </div>
+            </div>
+
+            <!-- Knowledge gaps -->
+            <div class="gaps-section">
+                <p class="section-heading">Knowledge gaps (no-answer queries)</p>
+                <div class="gaps-list" id="gapsList">
+                    <div class="gap-row"><span class="gap-name sk">&nbsp;</span>
+                        <div class="gap-track sk"></div>
+                        <span class="gap-count sk">&nbsp;</span></div>
+                    <div class="gap-row"><span class="gap-name sk">&nbsp;</span>
+                        <div class="gap-track sk"></div>
+                        <span class="gap-count sk">&nbsp;</span></div>
+                    <div class="gap-row"><span class="gap-name sk">&nbsp;</span>
+                        <div class="gap-track sk"></div>
+                        <span class="gap-count sk">&nbsp;</span></div>
+                </div>
+                <p class="section-sub" id="gapsHint" style="display:none">Prioritize these for next document
+                    uploads.</p>
+            </div>
+
+            <!-- Citation accuracy -->
+            <div>
+                <p class="section-heading section-heading--spaced">Citation accuracy rate</p>
+                <div class="accuracy-card">
+                    <div class="accuracy-value" id="accuracyValue">—</div>
+                    <p class="accuracy-meta">
+                        Target: &gt; 98%&nbsp;&middot;&nbsp;Status:&nbsp;<span class="accuracy-status"
+                                                                               id="accuracyStatus">—</span>
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div><!-- /.admin-main -->
+
+<script>
+    const TOKEN_KEY = 'muolana_token';
+    const REFRESH_KEY = 'muolana_refresh_token';
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) window.location.replace('/admin/login');
+
+    // Sidebar
+    const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    hamburgerBtn.addEventListener('click', () => {
+        adminSidebar.classList.add('open');
+        sidebarBackdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeSidebar() {
+        adminSidebar.classList.remove('open');
+        sidebarBackdrop.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', keyboardEvent => {
+        if (keyboardEvent.key === 'Escape') closeSidebar();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+        window.location.replace('/admin/login');
+    });
+
+    // Date ranges─
+
+    const RANGES = [
+        {label: 'This week', from: () => startOf('week'), to: () => endOf('now')},
+        {label: 'This month', from: () => startOf('month'), to: () => endOf('now')},
+        {label: 'All time', from: () => null, to: () => null},
+    ];
+    let rangeIdx = 1;
+
+    function startOf(unit) {
+        const dateObj = new Date();
+        if (unit === 'week') {
+            const day = dateObj.getDay();
+            dateObj.setDate(dateObj.getDate() - day);
+            dateObj.setHours(0, 0, 0, 0);
+        } else {
+            dateObj.setDate(1);
+            dateObj.setHours(0, 0, 0, 0);
+        }
+        return dateObj.toISOString();
+    }
+
+    function endOf() {
+        const dateObj = new Date();
+        dateObj.setHours(23, 59, 59, 999);
+        return dateObj.toISOString();
+    }
+
+    function buildQuery() {
+        const rangeConfig = RANGES[rangeIdx];
+        const from = rangeConfig.from();
+        const to = rangeConfig.to();
+        const params = new URLSearchParams();
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        return params.toString() ? '?' + params.toString() : '';
+    }
+
+    const rangePill = document.getElementById('rangePill');
+    rangePill.textContent = RANGES[rangeIdx].label;
+
+    rangePill.addEventListener('click', () => {
+        rangeIdx = (rangeIdx + 1) % RANGES.length;
+        rangePill.textContent = RANGES[rangeIdx].label;
+        loadAll();
+    });
+
+    // Fetch helper
+
+    async function api(path) {
+        const response = await fetch(path, {headers: {Authorization: 'Bearer ' + token}});
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(REFRESH_KEY);
+            window.location.replace('/admin/login');
+            throw new Error('unauthorized');
+        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    }
+
+    // Load
+
+    async function loadAll() {
+        resetState();
+        const queryString = buildQuery();
+        try {
+            const [summary, gaps, funnel] = await Promise.all([
+                api('/api/v1/admin/analytics/queries/summary' + queryString),
+                api('/api/v1/admin/analytics/queries/knowledge-gaps' + (queryString ? queryString + '&limit=5' : '?limit=5')),
+                api('/api/v1/admin/analytics/lawyers/funnel' + queryString),
+            ]);
+            renderStats(summary, funnel);
+            renderGaps(gaps);
+            renderAccuracy(summary);
+        } catch (error) {
+            if (error.message !== 'unauthorized') {
+                document.getElementById('errorText').textContent = 'Could not load analytics. Check API connectivity.';
+                document.getElementById('errorBanner').classList.add('visible');
+            }
+        }
+    }
+
+    function resetState() {
+        document.getElementById('errorBanner').classList.remove('visible');
+        document.getElementById('statQueries').textContent = '—';
+        document.getElementById('statConnects').textContent = '—';
+        document.getElementById('accuracyValue').textContent = '—';
+        document.getElementById('accuracyStatus').textContent = '—';
+        document.getElementById('accuracyStatus').className = 'accuracy-status';
+        document.getElementById('gapsHint').style.display = 'none';
+    }
+
+    function renderStats(summary, funnel) {
+        const total = summary.total ?? 0;
+        document.getElementById('statQueries').textContent = fmtNum(total);
+        document.getElementById('statConnects').textContent = fmtNum(funnel.buttonTapped ?? 0);
+    }
+
+    function renderGaps(gaps) {
+        const list = document.getElementById('gapsList');
+        list.innerHTML = '';
+
+        if (!gaps || gaps.length === 0) {
+            const emptyMessage = document.createElement('p');
+            emptyMessage.className = 'gaps-empty';
+            emptyMessage.textContent = 'No knowledge gaps detected in this period.';
+            list.appendChild(emptyMessage);
+            return;
+        }
+
+        const maxCount = gaps[0].count;
+
+        gaps.forEach(gapItem => {
+            const pct = maxCount > 0 ? Math.round(gapItem.count / maxCount * 100) : 0;
+
+            const row = document.createElement('div');
+            row.className = 'gap-row';
+
+            const name = document.createElement('span');
+            name.className = 'gap-name';
+            name.textContent = shortenQuery(gapItem.queryText);
+            name.title = gapItem.queryText;
+
+            const track = document.createElement('div');
+            track.className = 'gap-track';
+            const fill = document.createElement('div');
+            fill.className = 'gap-fill';
+            track.appendChild(fill);
+
+            const count = document.createElement('span');
+            count.className = 'gap-count';
+            count.textContent = gapItem.count;
+
+            row.appendChild(name);
+            row.appendChild(track);
+            row.appendChild(count);
+            list.appendChild(row);
+
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                fill.style.width = pct + '%';
+            }));
+        });
+
+        document.getElementById('gapsHint').style.display = '';
+    }
+
+    function renderAccuracy(summary) {
+        const total = summary.total ?? 0;
+        const answered = summary.answered ?? 0;
+        const rate = total > 0 ? (answered / total * 100) : 0;
+
+        document.getElementById('accuracyValue').textContent = rate.toFixed(1) + '%';
+
+        const statusEl = document.getElementById('accuracyStatus');
+        if (total === 0) {
+            statusEl.textContent = 'No data';
+            statusEl.className = 'accuracy-status';
+        } else if (rate >= 98) {
+            statusEl.textContent = 'On track';
+            statusEl.className = 'accuracy-status on-track';
+        } else {
+            statusEl.textContent = 'Below target';
+            statusEl.className = 'accuracy-status off-track';
+        }
+    }
+
+    function fmtNum(number) {
+        if (number >= 1000) return (number / 1000).toFixed(1).replace('.0', '') + 'k';
+        return number.toLocaleString();
+    }
+
+    function shortenQuery(text) {
+        if (!text) return '—';
+        const clean = text
+            .replace(/^(what|how|can|is|are|does|do|who|when|where|why)\s+/i, '')
+            .replace(/\?.*$/, '')
+            .trim();
+        return clean.length > 18 ? clean.slice(0, 17) + '…' : clean;
+    }
+
+    loadAll();
+</script>
+</body>
+</html>

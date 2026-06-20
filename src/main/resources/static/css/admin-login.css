@@ -1,0 +1,127 @@
+:root {
+    --border: rgba(0, 0, 0, 0.12);
+    --error: rgba(0, 0, 0, 0.75);
+}
+
+body {
+    background: var(--grey);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 0 48px;
+    min-height: 100dvh;
+}
+
+.card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--white);
+    border-radius: 20px;
+    padding: 36px 32px 32px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+    margin: 50px 10px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.logo-circle {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-name {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.brand-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.heading {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.sub-heading {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+}
+
+.field {
+    margin-bottom: 18px;
+}
+
+.field label {
+    font-size: 14px;
+}
+
+.field input {
+    padding: 12px 14px;
+    font-size: 15px;
+}
+
+.field input.invalid {
+    box-shadow: 0 0 0 2px var(--error);
+}
+
+.error-msg {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 14px;
+    background: #f4f6f8;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    font-size: 13px;
+    color: var(--error);
+    margin-bottom: 18px;
+    line-height: 1.45;
+}
+
+.error-msg.visible {
+    display: flex;
+}
+
+.error-msg svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+}
+
+.submit-btn {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.forgot {
+    text-align: center;
+    font-size: 13px;
+    color: var(--blue);
+}
+
+.forgot a {
+    color: var(--blue);
+    text-decoration: none;
+}
+
+.forgot a:hover {
+    text-decoration: underline;
+}
