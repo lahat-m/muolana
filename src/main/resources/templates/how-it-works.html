@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>How it works · Muolana</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/how-it-works.css}"/>
+</head>
+<body>
+
+<header class="app-header">
+    <a href="/" class="back-btn" aria-label="Back"><img th:src="@{/icons/arrow-left-icon.svg}" width="20" height="20" alt="" aria-hidden="true"/></a>
+    <span class="header-title">How it works</span>
+</header>
+
+<main class="main">
+    <h1>How Muolana works</h1>
+    <p class="sub">Three steps from question to answer.</p>
+
+    <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+            <p class="step-title">Ask your question</p>
+            <p class="step-desc">Type any legal question in plain language.</p>
+        </div>
+    </div>
+    <hr class="divider"/>
+
+    <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+            <p class="step-title">We Explain the Laws</p>
+            <p class="step-desc">Muolana finds and explains the South Sudan Laws for you.</p>
+        </div>
+    </div>
+    <hr class="divider"/>
+
+    <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+            <p class="step-title">Cited answer, instantly</p>
+            <p class="step-desc">You receive a clear answer with exact article citations.</p>
+        </div>
+    </div>
+    <hr class="divider"/>
+
+    <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+            <p class="step-title">Talk to a Lawyer</p>
+            <p class="step-desc">Need more help? Connect with verified South Sudan lawyer with context from your session already prepared.</p>
+        </div>
+    </div>
+
+    <a href="/chat" class="btn-primary">Start chatting</a>
+</main>
+
+</body>
+</html>

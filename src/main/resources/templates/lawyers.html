@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Talk a Lawyer · Muolana</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/lawyers.css}"/>
+</head>
+<body class="app-page">
+
+<!-- Header -->
+<header class="app-header">
+    <a aria-label="Back" class="back-btn" href="/chat"><img alt="" aria-hidden="true"
+                                                            height="20" th:src="@{/icons/arrow-left-icon.svg}" width="20"/></a>
+    <div class="header-text">
+        <div class="header-title">Talk a Lawyer</div>
+        <div class="header-sub">South Sudan Law Society verified</div>
+    </div>
+</header>
+
+<!-- Consent banner -->
+<div class="consent-banner">
+    Your issue summary will be shared with consent only.
+</div>
+
+<!-- Filter panel -->
+<div class="filter-panel">
+    <div class="filter-inner">
+        <div class="filter-group filter-card">
+            <span class="filter-label">Specialisation</span>
+            <div class="chip-wrap" id="specFilters">
+                <button class="chip active" data-spec="All">All</button>
+                <button class="chip" data-spec="Family">Family</button>
+                <button class="chip" data-spec="Land">Land</button>
+                <button class="chip" data-spec="Criminal">Criminal</button>
+                <button class="chip" data-spec="Employment">Employment</button>
+                <button class="chip" data-spec="Business">Business</button>
+                <button class="chip" data-spec="Commercial">Commercial</button>
+                <button class="chip" data-spec="Administrative">Administrative</button>
+            </div>
+        </div>
+        <div class="filter-group filter-card">
+            <span class="filter-label">Location</span>
+            <div class="chip-wrap" id="locFilters">
+                <button class="chip" data-state="Lakes">Lakes</button>
+                <button class="chip" data-state="Central Equatoria">Central Equatoria</button>
+                <button class="chip" data-state="Eastern Equatoria">Eastern Equatoria</button>
+                <button class="chip" data-state="Jonglei">Jonglei</button>
+                <button class="chip" data-state="Northern Bahr el Ghazal">Northern Bahr el Ghazal</button>
+                <button class="chip" data-state="Unity">Unity</button>
+                <button class="chip" data-state="Upper Nile">Upper Nile</button>
+                <button class="chip" data-state="Warrap">Warrap</button>
+                <button class="chip" data-state="Western Bahr el Ghazal">Western Bahr el Ghazal</button>
+                <button class="chip" data-state="Western Equatoria">Western Equatoria</button>
+                <button class="chip" data-state="Abyei Administrative Area">Abyei</button>
+                <button class="chip" data-state="Greater Pibor Administrative Area">Greater Pibor</button>
+                <button class="chip" data-state="Ruweng Administrative Area">Ruweng</button>
+                <button class="chip" id="freeOnlyChip">Free / Pro bono</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lawyer list -->
+<div class="content-scroll">
+    <div class="lawyers-list" id="lawyerList">
+        <!-- Skeleton placeholders -->
+        <div class="skeleton-card">
+            <div class="sk avatar"></div>
+            <div class="sk-info">
+                <div class="sk sk-name"></div>
+                <div class="sk sk-desc"></div>
+                <div class="sk sk-tag"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="sk avatar"></div>
+            <div class="sk-info">
+                <div class="sk sk-name"></div>
+                <div class="sk sk-desc"></div>
+                <div class="sk sk-tag"></div>
+            </div>
+        </div>
+        <div class="skeleton-card">
+            <div class="sk avatar"></div>
+            <div class="sk-info">
+                <div class="sk sk-name"></div>
+                <div class="sk sk-desc"></div>
+                <div class="sk sk-tag"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allLawyers = [];
+    let activeSpec = 'All';
+    let activeState = null;
+    let freeOnly = false;
+
+    // Filter chip wiring
+
+    document.getElementById('specFilters').addEventListener('click', clickEvent => {
+        const chip = clickEvent.target.closest('.chip');
+        if (!chip) return;
+        document.querySelectorAll('#specFilters .chip').forEach(filterChip => filterChip.classList.remove('active'));
+        chip.classList.add('active');
+        activeSpec = chip.dataset.spec;
+        render();
+    });
+
+    document.getElementById('locFilters').addEventListener('click', clickEvent => {
+        const chip = clickEvent.target.closest('.chip');
+        if (!chip) return;
+        if (chip.id === 'freeOnlyChip') {
+            freeOnly = !freeOnly;
+            chip.classList.toggle('active', freeOnly);
+        } else {
+            const state = chip.dataset.state;
+            if (activeState === state) {
+                activeState = null;
+                chip.classList.remove('active');
+            } else {
+                document.querySelectorAll('#locFilters .chip[data-state]').forEach(filterChip => filterChip.classList.remove('active'));
+                activeState = state;
+                chip.classList.add('active');
+            }
+        }
+        render();
+    });
+
+    // Data fetch
+
+    async function load() {
+        try {
+            const response = await fetch('/api/v1/lawyers?size=100');
+            if (!response.ok) throw new Error(response.status);
+            const data = await response.json();
+            allLawyers = data.data || [];
+            render();
+        } catch {
+            document.getElementById('lawyerList').innerHTML =
+                '<div class="state-msg"><strong>Could not load lawyers</strong>Check your connection and refresh.</div>';
+        }
+    }
+
+    // Filter
+
+    function filtered() {
+        return allLawyers.filter(lawyer => {
+            const specs = lawyer.specialisations || [];
+            const specOk = activeSpec === 'All' || specs.some(spec => spec.toLowerCase().includes(activeSpec.toLowerCase()));
+            const cityOk = !activeState || (lawyer.locationCity || '').toLowerCase().includes(activeState.toLowerCase());
+            const feeOk = !freeOnly || lawyer.feeType === 'FREE' || lawyer.feeType === 'PRO_BONO';
+            return specOk && cityOk && feeOk;
+        });
+    }
+
+    // Render
+
+    function render() {
+        const list = document.getElementById('lawyerList');
+        const lawyers = filtered();
+
+        list.innerHTML = '';
+
+        if (lawyers.length === 0) {
+            list.innerHTML = '<div class="state-msg"><strong>No lawyers found</strong>Try adjusting the filters above.</div>';
+            return;
+        }
+
+        const countEl = document.createElement('p');
+        countEl.className = 'result-count';
+        countEl.textContent = lawyers.length + ' lawyer' + (lawyers.length === 1 ? '' : 's') + ' found';
+        list.appendChild(countEl);
+
+        lawyers.forEach(lawyer => list.appendChild(buildCard(lawyer)));
+
+        const disc = document.createElement('p');
+        disc.className = 'disclaimer';
+        disc.textContent = 'Muolana does not endorse or guarantee services of listed lawyers.';
+        list.appendChild(disc);
+    }
+
+    // Card builder
+
+    function buildCard(lawyer) {
+        const card = document.createElement('div');
+        card.className = 'lawyer-card';
+        card.addEventListener('click', clickEvent => {
+            if (!clickEvent.target.closest('.action-btn')) window.location.href = '/lawyers/' + lawyer.id;
+        });
+
+        // Top section
+        const top = document.createElement('div');
+        top.className = 'card-top';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        const avImg = document.createElement('img');
+        avImg.src = '/icons/lawyer-profile-icon.svg';
+        avImg.width = 26;
+        avImg.height = 26;
+        avImg.alt = '';
+        avImg.setAttribute('aria-hidden', 'true');
+        avatar.appendChild(avImg);
+
+        const info = document.createElement('div');
+        info.className = 'card-info';
+
+        // Name + verified
+        const nameRow = document.createElement('div');
+        nameRow.className = 'name-row';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'lawyer-name';
+        nameEl.textContent = lawyer.fullName;
+        nameRow.appendChild(nameEl);
+        if (lawyer.isVerified) {
+            const icon = document.createElement('img');
+            icon.src = '/icons/verified-icon.svg';
+            icon.width = 17;
+            icon.height = 17;
+            icon.alt = 'Verified';
+            icon.title = 'Verified';
+            icon.style.flexShrink = '0';
+            nameRow.appendChild(icon);
+        }
+
+        // Sub-line: firm · specialisations · city
+        const specs = lawyer.specialisations || [];
+        const descParts = [];
+        if (lawyer.lawFirmName) descParts.push(lawyer.lawFirmName);
+        if (specs.length) descParts.push(specs.slice(0, 2).join(' & ') + ' Law');
+        if (lawyer.locationCity) descParts.push(lawyer.locationCity);
+        const desc = document.createElement('p');
+        desc.className = 'lawyer-desc';
+        desc.textContent = descParts.join(' · ') || 'General Practice';
+
+        // Tags row
+        const tags = document.createElement('div');
+        tags.className = 'tags';
+        specs.slice(0, 3).forEach(area => {
+            const areaTag = document.createElement('span');
+            areaTag.className = 'tag';
+            areaTag.textContent = area;
+            tags.appendChild(areaTag);
+        });
+        const feeTag = document.createElement('span');
+        feeTag.className = 'tag tag-fee';
+        feeTag.textContent = feeLabel(lawyer.feeType);
+        tags.appendChild(feeTag);
+
+        info.appendChild(nameRow);
+        info.appendChild(desc);
+        info.appendChild(tags);
+
+        top.appendChild(avatar);
+        top.appendChild(info);
+        card.appendChild(top);
+
+        // Action bar
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+        const phone = findContact(lawyer.contactMethods, 'PHONE');
+
+        actions.appendChild(actionBtn(true, phoneSvg(), 'Call',
+            phone ? 'tel:' + phone : null));
+        actions.appendChild(actionBtn(false, calendarSvg(), 'Book', '#'));
+
+        card.appendChild(actions);
+        return card;
+    }
+
+    function actionBtn(isPrimary, iconSvg, label, href) {
+        const anchorElement = document.createElement('a');
+        anchorElement.className = 'action-btn' + (isPrimary ? ' primary' : '');
+        anchorElement.innerHTML = iconSvg + label;
+        if (href && href !== '#') {
+            anchorElement.href = href;
+            if (href.startsWith('http')) anchorElement.target = '_blank';
+        } else if (href === '#') {
+            anchorElement.href = '#';
+            anchorElement.onclick = mouseEvent => mouseEvent.preventDefault();
+        } else {
+            anchorElement.setAttribute('aria-disabled', 'true');
+            anchorElement.href = '#';
+            anchorElement.onclick = mouseEvent => mouseEvent.preventDefault();
+        }
+        return anchorElement;
+    }
+
+    // Helpers
+
+    function getInitials(name) {
+        const clean = name.replace(/^(Advocate|Adv\.|Dr\.|Prof\.|Barrister)\s+/i, '').trim();
+        const parts = clean.split(/\s+/);
+        return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase();
+    }
+
+    function findContact(methods, channel) {
+        if (!methods) return null;
+        const foundMethod = methods.find(method => method.channel === channel && method.isPrimary)
+            || methods.find(method => method.channel === channel);
+        return foundMethod ? foundMethod.value : null;
+    }
+
+    function feeLabel(feeType) {
+        if (feeType === 'FREE') return 'Free';
+        if (feeType === 'PRO_BONO') return 'Pro bono';
+        return 'Paid';
+    }
+
+    // SVG icons
+
+    function phoneSvg() {
+        return '<img src="/icons/call-icon.svg" width="15" height="15" alt="" aria-hidden="true" style="flex-shrink:0"/>';
+    }
+
+    function calendarSvg() {
+        return '<img src="/icons/arrow-right-icon.svg" width="15" height="15" alt="" aria-hidden="true" style="flex-shrink:0"/>';
+    }
+
+    // Boot
+    load();
+</script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+body {
+    min-height: 100vh;
+}
+
+.nav {
+    display: flex;
+    max-width: 1024px;
+    margin: 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--black);
+}
+
+.nav-brand img {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+.nav-brand-name {
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.nav-sub {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.nav-action {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--blue);
+    border: none;
+    background: rgba(52, 186, 235, 0.07);
+    box-shadow: 0 1px 4px rgba(52, 186, 235, 0.18);
+    transition: box-shadow 0.15s, background 0.15s;
+}
+
+.nav-action:hover {
+    background: rgba(52, 186, 235, 0.13);
+    box-shadow: 0 2px 8px rgba(52, 186, 235, 0.28);
+}
+
+.main {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+}
+
+.hero-heading {
+    font-size: clamp(26px, 6vw, 36px);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin: 50px 14px;
+}
+
+.hero-sub {
+    font-size: 16px;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.60);
+    margin-bottom: 28px;
+}
+
+.disclaimer {
+    background: rgb(163 220 245 / 0.04);
+    border-left: 1px solid var(--blue);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+}
+
+.disclaimer-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.disclaimer p {
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.consent-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 28px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.consent-row input[type="checkbox"] {
+    display: none;
+}
+
+.check-box {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border: 2px solid var(--blue);
+    border-radius: 6px;
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    transition: background 0.15s;
+}
+
+.consent-row input:checked + .check-box {
+    background: var(--blue);
+}
+
+.consent-row input:checked + .check-box::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 10px;
+    border: 2px solid var(--white);
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.consent-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 40px;
+}
+
+.btn-primary {
+    width: 100%;
+    color: var(--white);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.btn-primary {
+    background: var(--blue);
+}
+
+.btn-primary {
+    padding: 17px;
+}
+
+.btn-primary {
+    display: block;
+}
+
+.btn-primary:hover {
+    opacity: 0.88;
+}
+
+.btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--white);
+    color: var(--black);
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.btn-secondary:hover {
+    background: var(--black);
+    color: var(--white);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding-top: 28px;
+    gap: 0;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 8px;
+}
+
+.stat-num {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--blue);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.50);
+    text-align: center;
+    line-height: 1.4;
+}
+
+@media (min-width: 540px) {
+    .main {
+        padding: 48px 24px 64px;
+    }
+}

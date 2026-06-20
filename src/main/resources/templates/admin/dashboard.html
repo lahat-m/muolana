@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Dashboard · Muolana Admin</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-nav.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-dashboard.css}"/>
+</head>
+<body class="app-page">
+
+<!-- Sidebar -->
+<aside aria-label="Admin navigation" class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-brand-row">
+        <img alt="" aria-hidden="true" class="sb-logo" src="/icons/logo-icon.svg"/>
+        <div class="sb-brand-text">
+            <div class="sidebar-brand">Muolana</div>
+            <div class="sidebar-brand-sub">Admin</div>
+        </div>
+        <button aria-label="Close menu" class="sidebar-close" id="sidebarClose"><img alt=""
+                                                                                     aria-hidden="true" height="16" src="/icons/cancel-icon.svg"
+                                                                                     width="16"/></button>
+    </div>
+    <nav class="sidebar-nav">
+        <a aria-current="page" class="sidebar-nav-item active" href="/admin/dashboard">
+            <img alt="" aria-hidden="true" src="/icons/home-icon.svg"/>
+            Dashboard
+        </a>
+        <a class="sidebar-nav-item" href="/admin/documents">
+            <img alt="" aria-hidden="true" src="/icons/file-icon.svg"/>
+            Documents
+        </a>
+        <a class="sidebar-nav-item" href="/admin/lawyers">
+            <img alt="" aria-hidden="true" src="/icons/lawyer-icon.svg"/>
+            Lawyers
+        </a>
+        <a class="sidebar-nav-item" href="/admin/analytics">
+            <img alt="" aria-hidden="true" src="/icons/analytics-icon.svg"/>
+            Analytics
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a class="sidebar-logout" id="logoutBtn" role="button" tabindex="0">
+            <img alt="" aria-hidden="true" src="/icons/logout-icon.svg"/>
+            Logout
+        </a>
+    </div>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- Main -->
+<div class="admin-main">
+
+    <header class="app-header">
+        <button aria-label="Open menu" class="hamburger" id="hamburgerBtn">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="header-text">
+            <div class="header-title">Dashboard</div>
+            <div class="header-sub">Digital Muolana &middot; LegalBuddy</div>
+        </div>
+        <button aria-label="Notifications" class="bell-btn"></button>
+    </header>
+
+    <!-- Scrollable content -->
+    <div class="content-scroll">
+        <div class="content-inner">
+
+            <!-- Error -->
+            <div class="error-banner" id="errorBanner">
+                <span id="errorText">Could not load dashboard data.</span>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statQueries">—</div>
+                    <div class="stat-label">Total queries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCitation">—</div>
+                    <div class="stat-label">Citation rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statLaws">—</div>
+                    <div class="stat-label">Laws ingested</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statLawyers">—</div>
+                    <div class="stat-label">Lawyers listed</div>
+                </div>
+            </div>
+
+            <!-- Top categories -->
+            <p class="section-heading">Top query categories</p>
+            <div class="categories" id="categoriesEl">
+                <div class="cat-row loading">
+                    <span class="cat-name skeleton">&nbsp;</span>
+                    <div class="bar-track"></div>
+                    <span class="cat-pct skeleton">&nbsp;</span>
+                </div>
+                <div class="cat-row loading">
+                    <span class="cat-name skeleton">&nbsp;</span>
+                    <div class="bar-track"></div>
+                    <span class="cat-pct skeleton">&nbsp;</span>
+                </div>
+                <div class="cat-row loading">
+                    <span class="cat-name skeleton">&nbsp;</span>
+                    <div class="bar-track"></div>
+                    <span class="cat-pct skeleton">&nbsp;</span>
+                </div>
+                <div class="cat-row loading">
+                    <span class="cat-name skeleton">&nbsp;</span>
+                    <div class="bar-track"></div>
+                    <span class="cat-pct skeleton">&nbsp;</span>
+                </div>
+                <div class="cat-row loading">
+                    <span class="cat-name skeleton">&nbsp;</span>
+                    <div class="bar-track"></div>
+                    <span class="cat-pct skeleton">&nbsp;</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div><!-- /.admin-main -->
+
+<script>
+    const TOKEN_KEY = 'muolana_token';
+    const REFRESH_KEY = 'muolana_refresh_token';
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) window.location.replace('/admin/login');
+
+    //Sidebar
+    const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    hamburgerBtn.addEventListener('click', () => {
+        adminSidebar.classList.add('open');
+        sidebarBackdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeSidebar() {
+        adminSidebar.classList.remove('open');
+        sidebarBackdrop.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', keyboardEvent => {
+        if (keyboardEvent.key === 'Escape') closeSidebar();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+        window.location.replace('/admin/login');
+    });
+
+    //Fetch helper
+
+    async function api(path) {
+        const response = await fetch(path, {
+            headers: {Authorization: 'Bearer ' + token}
+        });
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(REFRESH_KEY);
+            window.location.replace('/admin/login');
+            throw new Error('unauthorized');
+        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+    }
+
+    //Load dashboard data
+    async function loadDashboard() {
+        try {
+            const [summary, cats, ingestedPage, verifiedPage, lawyersPage] = await Promise.all([
+                api('/api/v1/admin/analytics/queries/summary'),
+                api('/api/v1/admin/analytics/queries/top-categories?limit=5'),
+                api('/api/v1/admin/legal-documents?status=INGESTED&size=1'),
+                api('/api/v1/admin/legal-documents?status=VERIFIED&size=1'),
+                api('/api/v1/admin/lawyers?size=1')
+            ]);
+
+            const lawsCount = (ingestedPage.totalElements ?? 0) + (verifiedPage.totalElements ?? 0);
+            renderStats(summary, lawsCount, lawyersPage.totalElements ?? 0);
+            renderCategories(cats, summary.total);
+
+        } catch (error) {
+            if (error.message !== 'unauthorized') {
+                showError('Could not load dashboard data. Check API connectivity.');
+            }
+        }
+    }
+
+    function renderStats(summary, lawsCount, lawyersCount) {
+        const total = summary.total ?? 0;
+        const answered = summary.answered ?? 0;
+
+        document.getElementById('statQueries').textContent =
+            total >= 1000 ? (total / 1000).toFixed(1).replace('.0', '') + 'k' : total.toLocaleString();
+
+        const citationRate = total > 0 ? (answered / total * 100).toFixed(1) : '0.0';
+        document.getElementById('statCitation').textContent = citationRate + '%';
+
+        document.getElementById('statLaws').textContent = lawsCount.toLocaleString();
+        document.getElementById('statLawyers').textContent = lawyersCount.toLocaleString();
+    }
+
+    function renderCategories(cats, totalQueries) {
+        const el = document.getElementById('categoriesEl');
+        el.innerHTML = '';
+
+        if (!cats || cats.length === 0) {
+            const empty = document.createElement('p');
+            empty.style.cssText = 'font-size:14px;color:rgba(0,0,0,0.4);padding:8px 0';
+            empty.textContent = 'No query data yet.';
+            el.appendChild(empty);
+            return;
+        }
+
+        cats.forEach(cat => {
+            const pct = totalQueries > 0
+                ? Math.round(cat.count / totalQueries * 100)
+                : 0;
+
+            const row = document.createElement('div');
+            row.className = 'cat-row';
+
+            const name = document.createElement('span');
+            name.className = 'cat-name';
+            name.textContent = formatCategory(cat.category);
+
+            const track = document.createElement('div');
+            track.className = 'bar-track';
+            const fill = document.createElement('div');
+            fill.className = 'bar-fill';
+            track.appendChild(fill);
+
+            const pctEl = document.createElement('span');
+            pctEl.className = 'cat-pct';
+            pctEl.textContent = pct + '%';
+
+            row.appendChild(name);
+            row.appendChild(track);
+            row.appendChild(pctEl);
+            el.appendChild(row);
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    fill.style.width = pct + '%';
+                });
+            });
+        });
+    }
+
+    const CATEGORY_LABELS = {
+        CONSTITUTIONAL: 'Constitutional',
+        LAND: 'Land rights',
+        EMPLOYMENT: 'Employment',
+        CIVIL: 'Civil',
+        CRIMINAL: 'Criminal',
+        ADMINISTRATIVE: 'Admin. law',
+        FAMILY: 'Family law',
+        COMMERCIAL: 'Commercial',
+        TENANCY: 'Tenancy',
+        BUSINESS: 'Business reg.',
+    };
+
+    function formatCategory(raw) {
+        return CATEGORY_LABELS[raw] || raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, ' ');
+    }
+
+    function showError(msg) {
+        document.getElementById('errorText').textContent = msg;
+        document.getElementById('errorBanner').classList.add('visible');
+    }
+
+    loadDashboard();
+</script>
+</body>
+</html>

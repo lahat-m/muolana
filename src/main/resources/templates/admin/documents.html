@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Legal documents · Muolana Admin</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-nav.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-documents.css}"/>
+</head>
+<body class="app-page">
+
+<!-- Hidden file input -->
+<input accept=".pdf,.docx,.doc" id="fileInput" style="display:none" type="file"/>
+
+<!-- Sidebar -->
+<aside aria-label="Admin navigation" class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-brand-row">
+        <img alt="" aria-hidden="true" class="sb-logo" src="/icons/logo-icon.svg"/>
+        <div class="sb-brand-text">
+            <div class="sidebar-brand">Muolana</div>
+            <div class="sidebar-brand-sub">Admin</div>
+        </div>
+        <button aria-label="Close menu" class="sidebar-close" id="sidebarClose"><img alt=""
+                                                                                     aria-hidden="true" height="16" src="/icons/cancel-icon.svg"
+                                                                                     width="16"/></button>
+    </div>
+    <nav class="sidebar-nav">
+        <a class="sidebar-nav-item" href="/admin/dashboard">
+            <img alt="" aria-hidden="true" src="/icons/home-icon.svg"/>
+            Dashboard
+        </a>
+        <a aria-current="page" class="sidebar-nav-item active" href="/admin/documents">
+            <img alt="" aria-hidden="true" src="/icons/file-icon.svg"/>
+            Documents
+        </a>
+        <a class="sidebar-nav-item" href="/admin/lawyers">
+            <img alt="" aria-hidden="true" src="/icons/lawyer-icon.svg"/>
+            Lawyers
+        </a>
+        <a class="sidebar-nav-item" href="/admin/analytics">
+            <img alt="" aria-hidden="true" src="/icons/analytics-icon.svg"/>
+            Analytics
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a class="sidebar-logout" id="logoutBtn" role="button" tabindex="0">
+            <img alt="" aria-hidden="true" src="/icons/logout-icon.svg"/>
+            Logout
+        </a>
+    </div>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- Main -->
+<div class="admin-main">
+
+    <header class="app-header">
+        <button aria-label="Open menu" class="hamburger" id="hamburgerBtn">
+            <span></span><span></span><span></span>
+        </button>
+        <span class="header-title">Legal documents</span>
+        <button aria-label="Upload document" class="add-btn" id="addBtn">&#43;</button>
+    </header>
+
+    <!-- Scrollable content -->
+    <div class="content-scroll">
+        <div class="content-inner">
+
+            <!-- Upload drop zone -->
+            <div class="upload-card" id="dropZone">
+                <p class="upload-title">Upload document</p>
+                <p class="upload-sub">official source documents required (PDF, DOCX)</p>
+                <button class="browse-btn" id="browseBtn" type="button">Browse files</button>
+            </div>
+
+            <!-- Document list -->
+            <p class="section-heading">Documents</p>
+            <div class="doc-list" id="docList">
+                <div class="doc-item loading">
+                    <div class="doc-info">
+                        <div class="doc-title"></div>
+                        <div class="doc-meta"></div>
+                    </div>
+                </div>
+                <div class="doc-item loading">
+                    <div class="doc-info">
+                        <div class="doc-title"></div>
+                        <div class="doc-meta"></div>
+                    </div>
+                </div>
+                <div class="doc-item loading">
+                    <div class="doc-info">
+                        <div class="doc-title"></div>
+                        <div class="doc-meta"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="pagination" id="pagination">
+                <button aria-label="Previous page" class="page-btn" id="prevBtn">&#8592; Prev</button>
+                <span class="page-info" id="pageInfo"></span>
+                <button aria-label="Next page" class="page-btn" id="nextBtn">Next &#8594;</button>
+            </div>
+        </div><!-- /.content-inner -->
+    </div><!-- /.content-scroll -->
+
+</div><!-- /.admin-main -->
+
+<!-- Upload modal (bottom sheet) -->
+<div class="modal-overlay" id="modalOverlay">
+    <div aria-labelledby="modalTitle" aria-modal="true" class="modal" role="dialog">
+
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle">Upload document</span>
+            <button aria-label="Close" class="modal-close" id="modalClose"><img alt="" aria-hidden="true"
+                                                                                height="16" src="/icons/cancel-icon.svg" width="16"/>
+            </button>
+        </div>
+
+        <div class="modal-body">
+
+            <div class="file-chip" id="fileChip">
+                <span id="fileNameEl">No file selected</span>
+            </div>
+
+            <div class="field">
+                <label for="fTitle">Title <span class="req">*</span></label>
+                <input id="fTitle" placeholder="e.g. Transitional Constitution of South Sudan" type="text"/>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="fShortName">Short name <span class="req">*</span></label>
+                    <input id="fShortName" placeholder="e.g. Constitution" type="text"/>
+                </div>
+                <div class="field">
+                    <label for="fCategory">Category <span class="req">*</span></label>
+                    <select id="fCategory">
+                        <option value="">Select…</option>
+                        <option value="CONSTITUTIONAL">Constitutional</option>
+                        <option value="LAND">Land</option>
+                        <option value="EMPLOYMENT">Employment</option>
+                        <option value="CIVIL">Civil</option>
+                        <option value="CRIMINAL">Criminal</option>
+                        <option value="ADMINISTRATIVE">Administrative</option>
+                        <option value="COMMERCIAL">Commercial</option>
+                        <option value="FAMILY">Family</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="fVersion">Year / version</label>
+                    <input id="fVersion" placeholder="e.g. 2011" type="text"/>
+                </div>
+                <div class="field">
+                    <label for="fSource">Source URL</label>
+                    <input id="fSource" placeholder="https://…" type="url"/>
+                </div>
+            </div>
+
+            <div class="modal-error" id="modalError" role="alert">
+                <span id="modalErrorText">Upload failed.</span>
+            </div>
+
+            <button class="upload-submit-btn" id="uploadBtn" type="button">
+                <span class="btn-label">Upload document</span>
+                <span aria-hidden="true" class="spinner"></span>
+            </button>
+
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+    const TOKEN_KEY = 'muolana_token';
+    const REFRESH_KEY = 'muolana_refresh_token';
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) window.location.replace('/admin/login');
+
+    // Sidebar     const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    hamburgerBtn.addEventListener('click', () => {
+        adminSidebar.classList.add('open');
+        sidebarBackdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeSidebar() {
+        adminSidebar.classList.remove('open');
+        sidebarBackdrop.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', keyboardEvent => {
+        if (keyboardEvent.key === 'Escape') {
+            closeSidebar();
+            closeModal();
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+        window.location.replace('/admin/login');
+    });
+
+    // Elements     const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const browseBtn = document.getElementById('browseBtn');
+    const addBtn = document.getElementById('addBtn');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalClose = document.getElementById('modalClose');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileNameEl = document.getElementById('fileNameEl');
+    const fTitle = document.getElementById('fTitle');
+    const fShortName = document.getElementById('fShortName');
+    const fCategory = document.getElementById('fCategory');
+    const fVersion = document.getElementById('fVersion');
+    const fSource = document.getElementById('fSource');
+    const modalError = document.getElementById('modalError');
+    const modalErrorText = document.getElementById('modalErrorText');
+
+    let selectedFile = null;
+    let docPage = 0;
+    let docLoading = false;
+
+    // Fetch helper
+
+    async function api(path, options = {}) {
+        const response = await fetch(path, {
+            ...options,
+            headers: {Authorization: 'Bearer ' + token, ...(options.headers || {})}
+        });
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(REFRESH_KEY);
+            window.location.replace('/admin/login');
+            throw new Error('unauthorized');
+        }
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.message || 'HTTP ' + response.status);
+        }
+        return response.status === 204 ? null : response.json();
+    }
+
+    // File picker
+
+    function openPicker() {
+        fileInput.click();
+    }
+
+    browseBtn.addEventListener('click', clickEvent => {
+        clickEvent.stopPropagation();
+        openPicker();
+    });
+    addBtn.addEventListener('click', openPicker);
+    dropZone.addEventListener('click', openPicker);
+
+    fileInput.addEventListener('change', () => {
+        if (!fileInput.files[0]) return;
+        selectFile(fileInput.files[0]);
+    });
+
+    dropZone.addEventListener('dragover', dragEvent => {
+        dragEvent.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', dropEvent => {
+        dropEvent.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const droppedFile = dropEvent.dataTransfer.files[0];
+        if (droppedFile) selectFile(droppedFile);
+    });
+
+    function selectFile(file) {
+        selectedFile = file;
+        fileNameEl.textContent = file.name;
+        const base = file.name.replace(/\.[^.]+$/, '').replace(/^\w{8}-\w{4}-.*?_/, '');
+        if (!fTitle.value) fTitle.value = base;
+        if (!fShortName.value) fShortName.value = base.split(/[\s_-]/)[0] || base;
+        openModal();
+    }
+
+    // Modal
+
+    function openModal() {
+        modalOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        clearModalError();
+    }
+
+    function closeModal() {
+        modalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', clickEvent => {
+        if (clickEvent.target === modalOverlay) closeModal();
+    });
+
+    // Upload
+
+    uploadBtn.addEventListener('click', doUpload);
+
+    async function doUpload() {
+        clearModalError();
+
+        const title = fTitle.value.trim();
+        const shortName = fShortName.value.trim();
+        const category = fCategory.value;
+
+        let valid = true;
+        if (!selectedFile) {
+            showModalError('Please select a file first.');
+            return;
+        }
+        [fTitle, fShortName, fCategory].forEach(formField => formField.classList.remove('invalid'));
+        if (!title) {
+            fTitle.classList.add('invalid');
+            valid = false;
+        }
+        if (!shortName) {
+            fShortName.classList.add('invalid');
+            valid = false;
+        }
+        if (!category) {
+            fCategory.classList.add('invalid');
+            valid = false;
+        }
+        if (!valid) {
+            showModalError('Title, short name, and category are required.');
+            return;
+        }
+
+        setUploading(true);
+
+        try {
+            const metadata = {
+                title, shortName, category,
+                versionLabel: fVersion.value.trim() || null,
+                sourceUrl: fSource.value.trim() || null
+            };
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('metadata',
+                new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+
+            await api('/api/v1/admin/legal-documents', {method: 'POST', body: formData});
+
+            closeModal();
+            resetForm();
+            showToast('Document uploaded — processing…');
+            await loadDocuments(0);
+            startProcessingPoll();
+
+        } catch (error) {
+            if (error.message !== 'unauthorized') {
+                showModalError(error.message || 'Upload failed. Please try again.');
+            }
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    function setUploading(on) {
+        uploadBtn.disabled = on;
+        uploadBtn.classList.toggle('loading', on);
+    }
+
+    function resetForm() {
+        selectedFile = null;
+        fileInput.value = '';
+        fileNameEl.textContent = 'No file selected';
+        fTitle.value = '';
+        fShortName.value = '';
+        fCategory.value = '';
+        fVersion.value = '';
+        fSource.value = '';
+        [fTitle, fShortName, fCategory].forEach(formField => formField.classList.remove('invalid'));
+    }
+
+    function showModalError(msg) {
+        modalErrorText.textContent = msg;
+        modalError.classList.add('visible');
+    }
+
+    function clearModalError() {
+        modalError.classList.remove('visible');
+    }
+
+    // Document list
+
+    const pagination = document.getElementById('pagination');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const pageInfo = document.getElementById('pageInfo');
+
+    prevBtn.addEventListener('click', () => loadDocuments(docPage - 1));
+    nextBtn.addEventListener('click', () => loadDocuments(docPage + 1));
+
+    let processingPollTimer = null;
+
+    function startProcessingPoll() {
+        if (processingPollTimer) return;
+        processingPollTimer = setInterval(() => loadDocuments(docPage, true), 2000);
+    }
+
+    function stopProcessingPoll() {
+        clearInterval(processingPollTimer);
+        processingPollTimer = null;
+    }
+
+    async function loadDocuments(page = 0, silent = false) {
+        if (docLoading) return;
+        docLoading = true;
+
+        const list = document.getElementById('docList');
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+
+        if (!silent) {
+            list.innerHTML =
+                '<div class="doc-item loading"><div class="doc-info"><div class="doc-title"></div><div class="doc-meta"></div></div></div>' +
+                '<div class="doc-item loading"><div class="doc-info"><div class="doc-title"></div><div class="doc-meta"></div></div></div>' +
+                '<div class="doc-item loading"><div class="doc-info"><div class="doc-title"></div><div class="doc-meta"></div></div></div>';
+        }
+
+        try {
+            const data = await api('/api/v1/admin/legal-documents?page=' + page + '&size=20&sort=createdAt,desc');
+            const docs = data.data || [];
+
+            const hasProcessingDocs = docs.some(doc => doc.status === 'CHUNKING' || doc.status === 'EMBEDDING');
+            if (!hasProcessingDocs) stopProcessingPoll();
+
+            list.innerHTML = '';
+            if (docs.length === 0) {
+                list.innerHTML = '<div class="empty-state"><strong>No documents yet</strong>Upload your first legal document above.</div>';
+                pagination.style.display = 'none';
+            } else {
+                const countEl = document.createElement('p');
+                countEl.className = 'doc-count';
+                countEl.textContent = data.totalElements + ' document' + (data.totalElements === 1 ? '' : 's');
+                list.appendChild(countEl);
+                docs.forEach(doc => list.appendChild(buildDocItem(doc)));
+
+                docPage = page;
+                pageInfo.textContent = 'Page ' + (page + 1) + ' of ' + data.totalPages;
+                prevBtn.disabled = page === 0;
+                nextBtn.disabled = data.last;
+                pagination.style.display = data.totalPages > 1 ? 'flex' : 'none';
+            }
+        } catch (error) {
+            if (error.message !== 'unauthorized') {
+                list.innerHTML = '<p class="empty-state"><strong>Could not load documents</strong>Check API connectivity.</p>';
+                pagination.style.display = 'none';
+            }
+        } finally {
+            docLoading = false;
+        }
+    }
+
+    function buildDocItem(doc) {
+        const isProcessing = doc.status === 'CHUNKING' || doc.status === 'EMBEDDING';
+
+        const item = document.createElement('div');
+        item.className = 'doc-item' + (isProcessing ? ' processing' : '');
+        item.dataset.docId = doc.id;
+        item.dataset.status = doc.status;
+
+        const icon = document.createElement('div');
+
+        const info = document.createElement('div');
+        info.className = 'doc-info';
+
+        const title = document.createElement('div');
+        title.className = 'doc-title';
+        const year = doc.versionLabel ? ' (' + doc.versionLabel + ')' : '';
+        title.textContent = (doc.shortName || doc.title) + year;
+
+        const meta = document.createElement('div');
+        meta.className = 'doc-meta';
+
+        const {dateText, statusText, statusCls} = statusMeta(doc);
+        if (dateText) {
+            const dateEl = document.createElement('span');
+            dateEl.className = 'date';
+            dateEl.textContent = dateText;
+            meta.appendChild(dateEl);
+            const sep = document.createElement('span');
+            sep.className = 'sep';
+            sep.textContent = ' · ';
+            meta.appendChild(sep);
+        }
+        const statusEl = document.createElement('span');
+        statusEl.className = 'doc-status ' + statusCls;
+        if (statusCls === 'verified-text') {
+            const vIcon = document.createElement('img');
+            vIcon.src = '/icons/verified-icon.svg';
+            vIcon.width = 13;
+            vIcon.height = 13;
+            vIcon.alt = '';
+            vIcon.setAttribute('aria-hidden', 'true');
+            vIcon.style.cssText = 'vertical-align:middle;margin-right:3px;flex-shrink:0';
+            statusEl.appendChild(vIcon);
+            statusEl.appendChild(document.createTextNode(statusText));
+        } else if (isProcessing) {
+            const spinner = document.createElement('span');
+            spinner.className = 'processing-spinner';
+            statusEl.appendChild(spinner);
+            statusEl.appendChild(document.createTextNode(statusText));
+        } else {
+            statusEl.textContent = statusText;
+        }
+        meta.appendChild(statusEl);
+
+        info.appendChild(title);
+        info.appendChild(meta);
+        item.appendChild(icon);
+        item.appendChild(info);
+
+        if (doc.status === 'PENDING' || doc.status === 'VERIFIED') {
+            const btn = document.createElement('button');
+            btn.className = 'doc-ingest-btn';
+            btn.textContent = doc.status === 'VERIFIED' ? 'Retry' : 'Ingest';
+            btn.addEventListener('click', clickEvent => {
+                clickEvent.stopPropagation();
+                doVerify(doc.id, btn);
+            });
+            item.appendChild(btn);
+        }
+
+        if (isProcessing) {
+            item.appendChild(buildProgressSteps(doc.status));
+        }
+
+        return item;
+    }
+
+    function buildProgressSteps(status) {
+        const steps = ['Uploaded', 'Chunking', 'Embedding', 'Complete'];
+        const activeIdx = status === 'CHUNKING' ? 1 : 2;
+
+        const progressRow = document.createElement('div');
+        progressRow.className = 'ingest-progress';
+
+        steps.forEach((label, index) => {
+            if (index > 0) {
+                const connector = document.createElement('div');
+                connector.className = 'step-connector' + (index <= activeIdx ? ' done' : '');
+                progressRow.appendChild(connector);
+            }
+
+            const stepEl = document.createElement('div');
+            stepEl.className = 'progress-step';
+
+            const dot = document.createElement('div');
+            dot.className = 'step-dot' + (index < activeIdx ? ' done' : index === activeIdx ? ' active' : '');
+
+            const labelEl = document.createElement('div');
+            labelEl.className = 'step-label' + (index < activeIdx ? ' done' : index === activeIdx ? ' active' : '');
+            labelEl.textContent = label;
+
+            stepEl.appendChild(dot);
+            stepEl.appendChild(labelEl);
+            progressRow.appendChild(stepEl);
+        });
+
+        return progressRow;
+    }
+
+    async function doVerify(docId, btn) {
+        btn.disabled = true;
+        btn.textContent = '…';
+        try {
+            await api('/api/v1/admin/legal-documents/' + docId + '/verify', {method: 'PATCH'});
+            showToast('Document queued for ingestion');
+            await loadDocuments(0);
+        } catch (error) {
+            if (error.message !== 'unauthorized') showToast('Could not ingest: ' + error.message);
+            btn.disabled = false;
+            btn.textContent = 'Ingest';
+        }
+    }
+
+    function statusMeta(doc) {
+        const date = doc.updatedAt || doc.createdAt;
+        const dateText = date ? 'Updated ' + fmtDate(date) : '';
+        switch (doc.status) {
+            case 'INGESTED':
+                return {
+                    dateText: 'Ingested ' + fmtDate(doc.createdAt),
+                    statusText: 'Ingested',
+                    statusCls: 'verified-text'
+                };
+            case 'VERIFIED':
+                return {dateText, statusText: 'Verified', statusCls: 'verified-text'};
+            case 'CHUNKING':
+                return {dateText: 'Processing…', statusText: 'Chunking text', statusCls: 'processing-text'};
+            case 'EMBEDDING':
+                return {dateText: 'Processing…', statusText: 'Embedding', statusCls: 'processing-text'};
+            case 'PENDING':
+                return {dateText: 'Pending review', statusText: 'Awaiting verification', statusCls: 'pending-text'};
+            case 'REJECTED':
+                return {
+                    dateText,
+                    statusText: '✕ Rejected' + (doc.rejectionReason ? ': ' + doc.rejectionReason : ''),
+                    statusCls: 'rejected-text'
+                };
+            default:
+                return {dateText, statusText: doc.status, statusCls: ''};
+        }
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '';
+        return new Date(iso).toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'});
+    }
+
+    // Toast
+
+    let toastTimer;
+
+    function showToast(msg) {
+        const toastElement = document.getElementById('toast');
+        toastElement.textContent = msg;
+        toastElement.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastElement.classList.remove('show'), 3000);
+    }
+
+    loadDocuments(0).then(() => {
+        const hasProcessing = document.querySelectorAll('.doc-item.processing').length > 0;
+        if (hasProcessing) startProcessingPoll();
+    });
+</script>
+</body>
+</html>

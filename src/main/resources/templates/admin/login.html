@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Admin login · Muolana</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-login.css}"/>
+</head>
+<body>
+
+<div class="card">
+
+    <!-- Brand -->
+    <div class="brand">
+        <img alt="" aria-hidden="true" height="40" style="flex-shrink:0" th:src="@{/icons/logo-icon.svg}" width="40"/>
+        <div class="brand-text">
+            <span class="brand-name">Digital Muolana Admin</span>
+            <span class="brand-sub">Authorized personnel only</span>
+        </div>
+    </div>
+
+    <!-- Heading -->
+    <h1 class="heading">Sign in to admin portal</h1>
+    <p class="sub-heading">For authorized administrators only.</p>
+
+    <!-- Form -->
+    <form id="loginForm" novalidate>
+
+        <div class="field">
+            <label for="email">Email address</label>
+            <input autocomplete="username" id="email" name="email"
+                   placeholder="admin@muolana.ss"
+                   required
+                   type="email"/>
+        </div>
+
+        <div class="field">
+            <label for="password">Password</label>
+            <input autocomplete="current-password" id="password" name="password"
+                   required
+                   type="password"/>
+        </div>
+
+        <!-- Error -->
+        <div class="error-msg" id="errorMsg" role="alert">
+            <img alt="" aria-hidden="true" height="15" th:src="@{/icons/cancel-icon.svg}" width="15"/>
+            <span id="errorText">Invalid email or password.</span>
+        </div>
+
+        <!-- Submit -->
+        <button class="submit-btn" id="submitBtn" type="submit">
+            <span class="btn-label">Sign in</span>
+            <span aria-hidden="true" class="spinner"></span>
+        </button>
+
+    </form>
+
+    <p class="forgot">
+        <a href="mailto:admin@muolana.ss">Forgot password? Contact system admin</a>
+    </p>
+
+</div>
+
+<script>
+    const TOKEN_KEY = 'muolana_token';
+    const REFRESH_KEY = 'muolana_refresh_token';
+
+    // Already logged in → skip to dashboard
+    if (localStorage.getItem(TOKEN_KEY)) {
+        window.location.replace('/admin/dashboard');
+    }
+
+    const form = document.getElementById('loginForm');
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+    const errorMsg = document.getElementById('errorMsg');
+    const errorText = document.getElementById('errorText');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async submitEvent => {
+        submitEvent.preventDefault();
+
+        const email = emailEl.value.trim();
+        const password = passwordEl.value;
+
+        clearError();
+
+        if (!email || !password) {
+            showError('Please enter your email and password.');
+            if (!email) emailEl.classList.add('invalid');
+            if (!password) passwordEl.classList.add('invalid');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password})
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                showError('Invalid email or password.');
+                passwordEl.value = '';
+                passwordEl.classList.add('invalid');
+                return;
+            }
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                showError(body.message || 'Sign-in failed. Please try again.');
+                return;
+            }
+
+            const data = await response.json();
+            localStorage.setItem(TOKEN_KEY, data.accessToken);
+            localStorage.setItem(REFRESH_KEY, data.refreshToken);
+            window.location.replace('/admin/dashboard');
+
+        } catch {
+            showError('Connection error. Check your network and try again.');
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // Clear invalid styling on input
+    [emailEl, passwordEl].forEach(formInput => {
+        formInput.addEventListener('input', () => {
+            formInput.classList.remove('invalid');
+            clearError();
+        });
+    });
+
+    function showError(msg) {
+        errorText.textContent = msg;
+        errorMsg.classList.add('visible');
+    }
+
+    function clearError() {
+        errorMsg.classList.remove('visible');
+    }
+
+    function setLoading(on) {
+        submitBtn.disabled = on;
+        submitBtn.classList.toggle('loading', on);
+    }
+</script>
+</body>
+</html>

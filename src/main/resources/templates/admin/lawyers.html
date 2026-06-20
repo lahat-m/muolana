@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Lawyer management · Muolana Admin</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-nav.css}"/>
+    <link rel="stylesheet" th:href="@{/css/admin-lawyers.css}"/>
+</head>
+<body class="app-page">
+
+<!-- Sidebar -->
+<aside aria-label="Admin navigation" class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-brand-row">
+        <img alt="" aria-hidden="true" class="sb-logo" src="/icons/logo-icon.svg"/>
+        <div class="sb-brand-text">
+            <div class="sidebar-brand">Muolana</div>
+            <div class="sidebar-brand-sub">Admin</div>
+        </div>
+        <button aria-label="Close menu" class="sidebar-close" id="sidebarClose"><img alt=""
+                                                                                     aria-hidden="true" height="16" src="/icons/cancel-icon.svg"
+                                                                                     width="16"/></button>
+    </div>
+    <nav class="sidebar-nav">
+        <a class="sidebar-nav-item" href="/admin/dashboard">
+            <img alt="" aria-hidden="true" src="/icons/home-icon.svg"/>
+            Dashboard
+        </a>
+        <a class="sidebar-nav-item" href="/admin/documents">
+            <img alt="" aria-hidden="true" src="/icons/file-icon.svg"/>
+            Documents
+        </a>
+        <a aria-current="page" class="sidebar-nav-item active" href="/admin/lawyers">
+            <img alt="" aria-hidden="true" src="/icons/lawyer-icon.svg"/>
+            Lawyers
+        </a>
+        <a class="sidebar-nav-item" href="/admin/analytics">
+            <img alt="" aria-hidden="true" src="/icons/analytics-icon.svg"/>
+            Analytics
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a class="sidebar-logout" id="logoutBtn" role="button" tabindex="0">
+            <img alt="" aria-hidden="true" src="/icons/logout-icon.svg"/>
+            Logout
+        </a>
+    </div>
+</aside>
+
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- Main -->
+<div class="admin-main">
+
+    <header class="app-header">
+        <button aria-label="Open menu" class="hamburger" id="hamburgerBtn">
+            <span></span><span></span><span></span>
+        </button>
+        <span class="header-title">Lawyer directory</span>
+        <button aria-label="Add lawyer" class="add-btn" id="addBtn">&#43;</button>
+    </header>
+
+    <!-- Search -->
+    <div class="search-wrap">
+        <div class="search-inner">
+            <label for="searchInput"></label><input autocomplete="off" class="search-input" id="searchInput"
+                                                    placeholder="Search lawyers…" type="search"/>
+        </div>
+    </div>
+
+    <!-- Lawyer list -->
+    <div class="content-scroll">
+        <div class="content-inner" id="lawyerList">
+            <div class="skeleton-card">
+                <div class="sk avatar"></div>
+                <div class="sk-info">
+                    <div class="sk sk-name"></div>
+                    <div class="sk sk-sub"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="sk avatar"></div>
+                <div class="sk-info">
+                    <div class="sk sk-name"></div>
+                    <div class="sk sk-sub"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="sk avatar"></div>
+                <div class="sk-info">
+                    <div class="sk sk-name"></div>
+                    <div class="sk sk-sub"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.admin-main -->
+
+<!-- Add / Edit modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div aria-labelledby="modalTitle" aria-modal="true" class="modal" role="dialog">
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle">Add lawyer</span>
+            <button aria-label="Close" class="modal-close" id="modalClose"><img alt="" aria-hidden="true"
+                                                                                height="16" src="/icons/cancel-icon.svg" width="16"/>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="field-row">
+                <div class="field field-full">
+                    <label for="fName">Full name <span class="req">*</span></label>
+                    <input id="fName" placeholder="e.g. Advocate Nyakim Agot" type="text"/>
+                </div>
+            </div>
+            <div class="field">
+                <label for="fFirm">Law firm / chambers</label>
+                <input id="fFirm" placeholder="e.g. Garang &amp; Associates" type="text"/>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="fBar">Bar number <span class="req">*</span></label>
+                    <input id="fBar" placeholder="e.g. LSS-2019-042" type="text"/>
+                </div>
+                <div class="field">
+                    <label for="fCity">City</label>
+                    <input id="fCity" placeholder="e.g. Juba" type="text"/>
+                </div>
+            </div>
+            <div class="field">
+                <label for="fFee">Fee type <span class="req">*</span></label>
+                <select id="fFee">
+                    <option value="">Select…</option>
+                    <option value="FREE">Free</option>
+                    <option value="PRO_BONO">Pro Bono</option>
+                    <option value="PAID">Paid</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="fBio">Bio</label>
+                <textarea id="fBio" placeholder="Brief professional background…"></textarea>
+            </div>
+            <div class="modal-error" id="modalError" role="alert">
+                <span id="modalErrorText"></span>
+            </div>
+            <button class="modal-submit-btn" id="modalSubmitBtn" type="button">
+                <span class="btn-label">Save lawyer</span>
+                <span aria-hidden="true" class="spinner"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+        <p class="confirm-msg" id="confirmMsg">Are you sure?</p>
+        <p class="confirm-sub" id="confirmSub"></p>
+        <div class="confirm-btns">
+            <button class="confirm-cancel" id="confirmCancel">Cancel</button>
+            <button class="confirm-ok" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+    const TOKEN_KEY = 'muolana_token';
+    const REFRESH_KEY = 'muolana_refresh_token';
+    const AVATAR_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) window.location.replace('/admin/login');
+
+    let allLawyers = [];
+    let editingId = null;
+    let confirmAction = null;
+
+    // ── Sidebar ────────────────────────────────────────────────
+    const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    hamburgerBtn.addEventListener('click', () => {
+        adminSidebar.classList.add('open');
+        sidebarBackdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeSidebar() {
+        adminSidebar.classList.remove('open');
+        sidebarBackdrop.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    sidebarClose.addEventListener('click', closeSidebar);
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', keyboardEvent => {
+        if (keyboardEvent.key === 'Escape') {
+            closeSidebar();
+            closeModal();
+            closeConfirm();
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_KEY);
+        window.location.replace('/admin/login');
+    });
+
+    // ── Fetch helper ─────────────────────────────────────────
+
+    async function api(path, options = {}) {
+        const response = await fetch(path, {
+            ...options,
+            headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', ...(options.headers || {})}
+        });
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(REFRESH_KEY);
+            window.location.replace('/admin/login');
+            throw new Error('unauthorized');
+        }
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.message || 'HTTP ' + response.status);
+        }
+        return response.status === 204 ? null : response.json();
+    }
+
+    // ── Load ─────────────────────────────────────────────────
+
+    async function loadLawyers() {
+        try {
+            const data = await api('/api/v1/admin/lawyers?size=100&sort=createdAt,desc');
+            allLawyers = data.data || [];
+            renderList(allLawyers);
+        } catch (error) {
+            if (error.message !== 'unauthorized') {
+                document.getElementById('lawyerList').innerHTML =
+                    '<div class="state-msg"><strong>Could not load lawyers</strong>Check API connectivity.</div>';
+            }
+        }
+    }
+
+    // ── Search ────────────────────────────────────────────────
+
+    document.getElementById('searchInput').addEventListener('input', inputEvent => {
+        const searchQuery = inputEvent.target.value.toLowerCase().trim();
+        const filtered = searchQuery
+            ? allLawyers.filter(lawyer =>
+                lawyer.fullName.toLowerCase().includes(searchQuery) ||
+                (lawyer.locationCity || '').toLowerCase().includes(searchQuery) ||
+                (lawyer.specialisations || []).some(spec => spec.toLowerCase().includes(searchQuery)))
+            : allLawyers;
+        renderList(filtered);
+    });
+
+    // ── Render list ───────────────────────────────────────────
+
+    function renderList(lawyers) {
+        const list = document.getElementById('lawyerList');
+        list.innerHTML = '';
+
+        if (lawyers.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'lawyers-empty';
+            emptyState.setAttribute('role', 'button');
+            emptyState.tabIndex = 0;
+            emptyState.setAttribute('aria-label', 'Add a lawyer');
+
+            const iconEl = document.createElement('img');
+            iconEl.src = '/icons/add-icon.svg';
+            iconEl.width = 48;
+            iconEl.height = 48;
+            iconEl.alt = '';
+            iconEl.setAttribute('aria-hidden', 'true');
+
+            const label = document.createElement('p');
+            label.className = 'lawyers-empty-label';
+            label.textContent = 'Add a lawyer';
+
+            emptyState.appendChild(iconEl);
+            emptyState.appendChild(label);
+            emptyState.addEventListener('click', openCreate);
+            emptyState.addEventListener('keydown', keyboardEvent => {
+                if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') openCreate();
+            });
+
+            list.appendChild(emptyState);
+            return;
+        }
+
+        lawyers.forEach(lawyer => list.appendChild(buildCard(lawyer)));
+    }
+
+    // ── Build card ────────────────────────────────────────────
+
+    function buildCard(lawyer) {
+        const status = (lawyer.status || 'PENDING').toUpperCase();
+        const statusCls = status === 'ACTIVE' ? 'active' : status === 'SUSPENDED' ? 'suspended' : 'pending';
+
+        const card = document.createElement('div');
+        card.className = 'lawyer-card ' + statusCls;
+
+        const top = document.createElement('div');
+        top.className = 'card-top';
+
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'avatar';
+        const avatarImage = document.createElement('img');
+        avatarImage.src = '/icons/lawyer-profile-icon.svg';
+        avatarImage.width = 24;
+        avatarImage.height = 24;
+        avatarImage.alt = '';
+        avatarImage.setAttribute('aria-hidden', 'true');
+        avatarContainer.appendChild(avatarImage);
+
+        const info = document.createElement('div');
+        info.className = 'card-info';
+        info.style.flex = '1';
+
+        const name = document.createElement('div');
+        name.className = 'card-name';
+        name.textContent = lawyer.fullName;
+
+        const subtitleElement = document.createElement('div');
+        subtitleElement.className = 'card-sub';
+        const specs = (lawyer.specialisations || []).slice(0, 1).join('');
+        const parts = [lawyer.lawFirmName, specs, lawyer.locationCity, feeLbl(lawyer.feeType)].filter(Boolean);
+        subtitleElement.textContent = parts.join(' · ') || 'No details yet';
+
+        info.appendChild(name);
+        info.appendChild(subtitleElement);
+
+        const badge = document.createElement('span');
+        badge.className = 'status-badge ' + statusCls;
+        badge.innerHTML = statusCls === 'active'
+            ? 'Active'
+            : statusCls === 'pending'
+                ? 'Pending'
+                : 'Suspended';
+
+        top.appendChild(avatarContainer);
+        top.appendChild(info);
+        top.appendChild(badge);
+        card.appendChild(top);
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        if (status === 'PENDING') {
+            actions.appendChild(actionBtn('approve-btn', 'Approve',
+                () => confirmDialog(
+                    'Approve ' + firstName(lawyer.fullName) + '?',
+                    'This will activate the lawyer on the public directory.',
+                    'Approve', true, () => doApprove(lawyer.id))));
+
+            actions.appendChild(actionBtn('reject-btn', 'Reject',
+                () => confirmDialog(
+                    'Reject ' + firstName(lawyer.fullName) + '?',
+                    'The lawyer will be suspended and removed from the public directory.',
+                    'Reject', false, () => doSuspend(lawyer.id))));
+        } else {
+            actions.appendChild(actionBtn('edit-btn', 'Edit',
+                () => openEdit(lawyer)));
+
+            actions.appendChild(actionBtn('remove-btn', 'Remove',
+                () => confirmDialog(
+                    'Remove ' + firstName(lawyer.fullName) + '?',
+                    'This will permanently delete the lawyer record.',
+                    'Remove', false, () => doDelete(lawyer.id))));
+        }
+
+        card.appendChild(actions);
+        return card;
+    }
+
+    function actionBtn(cls, html, onClick) {
+        const btn = document.createElement('button');
+        btn.className = 'card-action-btn ' + cls;
+        btn.innerHTML = html;
+        btn.addEventListener('click', onClick);
+        return btn;
+    }
+
+    // ── API actions ───────────────────────────────────────────
+
+    async function doApprove(id) {
+        try {
+            await api('/api/v1/admin/lawyers/' + id + '/approve', {method: 'PATCH'});
+            showToast('Lawyer approved');
+            loadLawyers();
+        } catch (error) {
+            if (error.message !== 'unauthorized') showToast('Could not approve: ' + error.message);
+        }
+    }
+
+    async function doSuspend(id) {
+        try {
+            await api('/api/v1/admin/lawyers/' + id + '/suspend', {method: 'PATCH'});
+            showToast('Lawyer suspended');
+            loadLawyers();
+        } catch (error) {
+            if (error.message !== 'unauthorized') showToast('Could not suspend: ' + error.message);
+        }
+    }
+
+    async function doDelete(id) {
+        try {
+            await api('/api/v1/admin/lawyers/' + id, {method: 'DELETE'});
+            showToast('Lawyer removed');
+            loadLawyers();
+        } catch (error) {
+            if (error.message !== 'unauthorized') showToast('Could not remove: ' + error.message);
+        }
+    }
+
+    // ── Add / Edit modal ──────────────────────────────────────
+
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitleEl = document.getElementById('modalTitle');
+    const modalClose = document.getElementById('modalClose');
+    const modalSubmitBtn = document.getElementById('modalSubmitBtn');
+    const modalError = document.getElementById('modalError');
+    const modalErrorText = document.getElementById('modalErrorText');
+    const fName = document.getElementById('fName');
+    const fFirm = document.getElementById('fFirm');
+    const fBar = document.getElementById('fBar');
+    const fCity = document.getElementById('fCity');
+    const fFee = document.getElementById('fFee');
+    const fBio = document.getElementById('fBio');
+
+    document.getElementById('addBtn').addEventListener('click', openCreate);
+
+    function openCreate() {
+        editingId = null;
+        modalTitleEl.textContent = 'Add lawyer';
+        modalSubmitBtn.querySelector('.btn-label').textContent = 'Add lawyer';
+        clearForm();
+        clearModalError();
+        openModal();
+    }
+
+    function openEdit(lawyer) {
+        editingId = lawyer.id;
+        modalTitleEl.textContent = 'Edit lawyer';
+        modalSubmitBtn.querySelector('.btn-label').textContent = 'Save changes';
+        fName.value = lawyer.fullName || '';
+        fFirm.value = lawyer.lawFirmName || '';
+        fBar.value = lawyer.barNumber || '';
+        fCity.value = lawyer.locationCity || '';
+        fFee.value = lawyer.feeType || '';
+        fBio.value = lawyer.bio || '';
+        clearModalError();
+        openModal();
+    }
+
+    function openModal() {
+        modalOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => fName.focus(), 320);
+    }
+
+    function closeModal() {
+        modalOverlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', clickEvent => {
+        if (clickEvent.target === modalOverlay) closeModal();
+    });
+
+    modalSubmitBtn.addEventListener('click', doSave);
+
+    async function doSave() {
+        clearModalError();
+        [fName, fBar, fFee].forEach(formField => formField.classList.remove('invalid'));
+
+        const fullName = fName.value.trim();
+        const barNumber = fBar.value.trim();
+        const feeType = fFee.value;
+
+        let valid = true;
+        if (!fullName) {
+            fName.classList.add('invalid');
+            valid = false;
+        }
+        if (!barNumber) {
+            fBar.classList.add('invalid');
+            valid = false;
+        }
+        if (!feeType) {
+            fFee.classList.add('invalid');
+            valid = false;
+        }
+        if (!valid) {
+            showModalError('Full name, bar number, and fee type are required.');
+            return;
+        }
+
+        const body = {
+            fullName,
+            barNumber,
+            lawFirmName: fFirm.value.trim() || null,
+            locationCity: fCity.value.trim() || null,
+            feeType,
+            bio: fBio.value.trim() || null
+        };
+        setModalLoading(true);
+
+        try {
+            if (editingId) {
+                await api('/api/v1/admin/lawyers/' + editingId, {method: 'PATCH', body: JSON.stringify(body)});
+                showToast('Lawyer updated');
+            } else {
+                await api('/api/v1/admin/lawyers', {method: 'POST', body: JSON.stringify(body)});
+                showToast('Lawyer added');
+            }
+            closeModal();
+            clearForm();
+            loadLawyers();
+        } catch (error) {
+            if (error.message !== 'unauthorized') showModalError(error.message || 'Save failed. Please try again.');
+        } finally {
+            setModalLoading(false);
+        }
+    }
+
+    function clearForm() {
+        fName.value = '';
+        fFirm.value = '';
+        fBar.value = '';
+        fCity.value = '';
+        fFee.value = '';
+        fBio.value = '';
+    }
+
+    function showModalError(msg) {
+        modalErrorText.textContent = msg;
+        modalError.classList.add('visible');
+    }
+
+    function clearModalError() {
+        modalError.classList.remove('visible');
+    }
+
+    function setModalLoading(on) {
+        modalSubmitBtn.disabled = on;
+        modalSubmitBtn.classList.toggle('loading', on);
+    }
+
+    // ── Confirm dialog ────────────────────────────────────────
+
+    const confirmOverlay = document.getElementById('confirmOverlay');
+
+    function confirmDialog(msg, sub, okLabel, isGreen, onConfirm) {
+        document.getElementById('confirmMsg').textContent = msg;
+        document.getElementById('confirmSub').textContent = sub;
+        const okBtn = document.getElementById('confirmOk');
+        okBtn.textContent = okLabel;
+        okBtn.className = 'confirm-ok' + (isGreen ? ' green-ok' : '');
+        confirmAction = onConfirm;
+        confirmOverlay.classList.add('open');
+    }
+
+    function closeConfirm() {
+        confirmOverlay.classList.remove('open');
+        confirmAction = null;
+    }
+
+    document.getElementById('confirmCancel').addEventListener('click', closeConfirm);
+    document.getElementById('confirmOk').addEventListener('click', () => {
+        if (confirmAction) {
+            confirmAction();
+            confirmAction = null;
+        }
+        closeConfirm();
+    });
+    confirmOverlay.addEventListener('click', clickEvent => {
+        if (clickEvent.target === confirmOverlay) closeConfirm();
+    });
+
+    // ── Helpers ───────────────────────────────────────────────
+
+    function initials(name) {
+        const clean = name.replace(/^(Advocate|Adv\.|Dr\.|Prof\.)\s+/i, '').trim();
+        const parts = clean.split(/\s+/);
+        return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase();
+    }
+
+    function firstName(name) {
+        return name.split(/\s+/).slice(-1)[0] || name;
+    }
+
+    function feeLbl(feeType) {
+        if (feeType === 'FREE') return 'Free';
+        if (feeType === 'PRO_BONO') return 'Pro Bono';
+        if (feeType === 'PAID') return 'Paid';
+        return feeType || '';
+    }
+
+    // ── Toast ─────────────────────────────────────────────────
+
+    let toastTimer;
+
+    function showToast(msg) {
+        const toastElement = document.getElementById('toast');
+        toastElement.textContent = msg;
+        toastElement.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastElement.classList.remove('show'), 3000);
+    }
+
+    loadLawyers();
+</script>
+</body>
+</html>

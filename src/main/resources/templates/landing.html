@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta content="Muolana — instant cited legal answers from South Sudan law, free." name="description"/>
+    <title>Digital Muolana · LegalBuddy South Sudan</title>
+    <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
+    <link rel="stylesheet" th:href="@{/css/landing.css}"/>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+    <a class="nav-brand" href="/">
+        <img alt="" aria-hidden="true" height="34" th:src="@{/icons/logo-icon.svg}" width="34"/>
+        <div>
+            <div class="nav-brand-name">Digital Muolana</div>
+            <div class="nav-sub">LegalBuddy · South Sudan</div>
+        </div>
+    </a>
+    <a class="nav-action" href="/how-it-works">How it works</a>
+</nav>
+
+<!-- Main -->
+<main class="main">
+    <h1 class="hero-heading">Know your rights. Ask any question about South Sudan law.</h1>
+    <p class="hero-sub">Free, instant intelligence into South Sudan laws.</p>
+
+    <div class="disclaimer" role="note">
+        <p class="disclaimer-title">DISCLAIMER</p>
+        <p>Muolana provides legal information, not legal advice. Always consult a licensed advocate.</p>
+    </div>
+
+    <label class="consent-row">
+        <input id="consent" type="checkbox"/>
+        <span class="check-box"></span>
+        <span class="consent-text">I understand this is an AI tool and not official legal counsel.</span>
+    </label>
+
+    <div class="actions">
+        <a class="btn-primary" href="/chat" id="startBtn">Start chatting</a>
+        <a class="btn-secondary" href="/how-it-works">How it works</a>
+    </div>
+
+    <!--    <div class="stats">-->
+    <!--        <div class="stat">-->
+    <!--            <span class="stat-num" th:text="${actsIngested}">0</span>-->
+    <!--            <span class="stat-label">Laws & Acts</span>-->
+    <!--        </div>-->
+    <!--        <div class="stat">-->
+    <!--            <span class="stat-num" th:text="${citedAnswers}">100%</span>-->
+    <!--            <span class="stat-label">Cited answers</span>-->
+    <!--        </div>-->
+    <!--        <div class="stat">-->
+    <!--            <span class="stat-num" th:text="${noAnswers}">0%</span>-->
+    <!--            <span class="stat-label">No-answer rate</span>-->
+    <!--        </div>-->
+    <!--    </div>-->
+</main>
+
+<script>
+    const consent = document.getElementById('consent');
+    const startBtn = document.getElementById('startBtn');
+
+    function sync() {
+        startBtn.style.opacity = consent.checked ? '1' : '0.4';
+        startBtn.style.pointerEvents = consent.checked ? 'auto' : 'none';
+    }
+
+    consent.addEventListener('change', sync);
+    sync();
+</script>
+</body>
+</html>
