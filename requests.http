@@ -1,0 +1,457 @@
+### Muolana Admin API — IntelliJ HTTP Client
+### All admin endpoints require a Bearer token obtained from /auth/login.
+### Run "Login" first; the token is stored automatically via the response handler.
+
+@baseUrl = http://localhost:8080
+@adminEmail = admin@muolana.ss
+@adminPassword = Admin@2024!
+
+# Fill these after creating resources:
+@token = {{token}}
+@refreshToken = {{refreshToken}}
+@userId = 00000000-0000-0000-0000-000000000000
+@lawyerId = 00000000-0000-0000-0000-000000000000
+@specId = 00000000-0000-0000-0000-000000000000
+@langId = 00000000-0000-0000-0000-000000000000
+@contactId = 00000000-0000-0000-0000-000000000000
+@docId = 00000000-0000-0000-0000-000000000000
+
+
+# ══════════════════════════════════════════════════════════════
+#  AUTH
+# ══════════════════════════════════════════════════════════════
+
+### Login — stores token + refreshToken globally
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+  client.global.set("token", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+###
+
+### Refresh access token
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+  client.global.set("token", response.body.accessToken);
+  client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+###
+
+### Logout
+POST {{baseUrl}}/api/v1/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+
+
+### Create admin user
+POST {{baseUrl}}/api/v1/admin/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "admin2@muolana.ss",
+  "password": "Admin@2024!",
+  "fullName": "Second Admin"
+}
+
+###
+
+### List users (all)
+GET {{baseUrl}}/api/v1/admin/users
+Authorization: Bearer {{token}}
+
+###
+
+### List users — filter by role
+GET {{baseUrl}}/api/v1/admin/users?role=ADMIN&size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### List users — filter by active status
+GET {{baseUrl}}/api/v1/admin/users?isActive=true&size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### Get user by ID
+GET {{baseUrl}}/api/v1/admin/users/{{userId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Update user — deactivate
+PATCH {{baseUrl}}/api/v1/admin/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+###
+
+### Update user — reactivate
+PATCH {{baseUrl}}/api/v1/admin/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+
+# ══════════════════════════════════════════════════════════════
+#  ADMIN — LAWYERS
+# ══════════════════════════════════════════════════════════════
+
+### Create lawyer
+# feeType: FREE | PAID | PRO_BONO
+POST {{baseUrl}}/api/v1/admin/lawyers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Ayen Deng Kuol",
+  "barNumber": "SSLS-2024-001",
+  "locationCity": "Juba",
+  "feeType": "PAID",
+  "bio": "Advocate specialising in land disputes and commercial law."
+}
+
+> {%
+  client.global.set("lawyerId", response.body.id);
+%}
+
+###
+
+### List lawyers (all statuses)
+GET {{baseUrl}}/api/v1/admin/lawyers
+Authorization: Bearer {{token}}
+
+###
+
+### List lawyers — filter by status
+# status: PENDING | ACTIVE | SUSPENDED | REMOVED
+GET {{baseUrl}}/api/v1/admin/lawyers?status=PENDING&size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### Get lawyer by ID
+GET {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Replace lawyer (full update)
+PUT {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Ayen Deng Kuol",
+  "barNumber": "SSLS-2024-001",
+  "locationCity": "Juba",
+  "feeType": "PRO_BONO",
+  "bio": "Updated bio text."
+}
+
+###
+
+### Patch lawyer (partial update)
+PATCH {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "locationCity": "Wau",
+  "feeType": "FREE"
+}
+
+###
+
+### Approve lawyer
+PATCH {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/approve
+Authorization: Bearer {{token}}
+
+###
+
+### Suspend lawyer
+PATCH {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/suspend
+Authorization: Bearer {{token}}
+
+###
+
+### Delete lawyer
+DELETE {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Add specialisation
+# area examples: Family, Land, Criminal, Commercial, Constitutional, Employment
+POST {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/specialisations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "area": "Land"
+}
+
+> {%
+  client.global.set("specId", response.body.id);
+%}
+
+###
+
+### Remove specialisation
+DELETE {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/specialisations/{{specId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Add language
+# language examples: English, Dinka, Arabic, Nuer, Zande
+POST {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/languages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "language": "English"
+}
+
+> {%
+  client.global.set("langId", response.body.id);
+%}
+
+###
+
+### Add second language
+POST {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/languages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "language": "Dinka"
+}
+
+###
+
+### Remove language
+DELETE {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/languages/{{langId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Add contact method
+# channel: PHONE | EMAIL | CALLBACK
+POST {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/contact-methods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channel": "PHONE",
+  "value": "+211912345678",
+  "isPrimary": true
+}
+
+> {%
+  client.global.set("contactId", response.body.id);
+%}
+
+###
+
+### Add email contact method
+POST {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/contact-methods
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "channel": "EMAIL",
+  "value": "ayen.deng@lawjuba.ss",
+  "isPrimary": false
+}
+
+###
+
+### Remove contact method
+DELETE {{baseUrl}}/api/v1/admin/lawyers/{{lawyerId}}/contact-methods/{{contactId}}
+Authorization: Bearer {{token}}
+
+
+# ══════════════════════════════════════════════════════════════
+#  ADMIN — LEGAL DOCUMENTS
+# ══════════════════════════════════════════════════════════════
+
+### Upload legal document (multipart)
+# category: CIVIL | CRIMINAL | FAMILY | LAND | EMPLOYMENT | COMMERCIAL | CONSTITUTIONAL | ADMINISTRATIVE
+# Part "metadata" is JSON; part "file" is the PDF binary.
+POST {{baseUrl}}/api/v1/admin/legal-documents
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=MuolanaBoundary
+
+--MuolanaBoundary
+Content-Disposition: form-data; name="metadata"
+Content-Type: application/json
+
+{
+  "title": "Land Act of South Sudan 2009",
+  "shortName": "Land Act 2009",
+  "category": "LAND",
+  "versionLabel": "2009",
+  "sourceUrl": "https://www.moj.gov.ss/land-act-2009.pdf"
+}
+--MuolanaBoundary
+Content-Disposition: form-data; name="file"; filename="land-act-2009.pdf"
+Content-Type: application/pdf
+
+< ./docs/land-act-2009.pdf
+--MuolanaBoundary--
+
+> {%
+  client.global.set("docId", response.body.id);
+%}
+
+###
+
+### List documents (all)
+GET {{baseUrl}}/api/v1/admin/legal-documents
+Authorization: Bearer {{token}}
+
+###
+
+### List documents — filter by status and category
+# status: PENDING | VERIFIED | INGESTED | SUPERSEDED | REJECTED
+GET {{baseUrl}}/api/v1/admin/legal-documents?status=PENDING&category=LAND&size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### Get document by ID
+GET {{baseUrl}}/api/v1/admin/legal-documents/{{docId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Verify document — triggers ingestion pipeline
+PATCH {{baseUrl}}/api/v1/admin/legal-documents/{{docId}}/verify
+Authorization: Bearer {{token}}
+
+###
+
+### Reject document
+PATCH {{baseUrl}}/api/v1/admin/legal-documents/{{docId}}/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rejectionReason": "Document is a draft version; official gazette source required."
+}
+
+###
+
+### Get document chunks (after ingestion)
+GET {{baseUrl}}/api/v1/admin/legal-documents/{{docId}}/chunks?size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### Delete document
+DELETE {{baseUrl}}/api/v1/admin/legal-documents/{{docId}}
+Authorization: Bearer {{token}}
+
+
+# ══════════════════════════════════════════════════════════════
+#  ADMIN — ANALYTICS
+# ══════════════════════════════════════════════════════════════
+
+### Query logs — all (paginated)
+GET {{baseUrl}}/api/v1/admin/analytics/queries?size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### Query logs — filter by outcome and date range
+# outcome: ANSWERED | NOT_FOUND | ERROR
+GET {{baseUrl}}/api/v1/admin/analytics/queries?outcome=NOT_FOUND&from=2026-01-01T00:00:00Z&to=2026-12-31T23:59:59Z&size=20&page=0
+Authorization: Bearer {{token}}
+
+###
+
+### Query summary — all time
+GET {{baseUrl}}/api/v1/admin/analytics/queries/summary
+Authorization: Bearer {{token}}
+
+###
+
+### Query summary — date range
+GET {{baseUrl}}/api/v1/admin/analytics/queries/summary?from=2026-01-01T00:00:00Z&to=2026-12-31T23:59:59Z
+Authorization: Bearer {{token}}
+
+###
+
+### Top queried categories — default top 10
+GET {{baseUrl}}/api/v1/admin/analytics/queries/top-categories
+Authorization: Bearer {{token}}
+
+###
+
+### Top queried categories — custom limit
+GET {{baseUrl}}/api/v1/admin/analytics/queries/top-categories?limit=5&from=2026-01-01T00:00:00Z
+Authorization: Bearer {{token}}
+
+###
+
+### Knowledge gaps (unanswered query clusters) — default top 10
+GET {{baseUrl}}/api/v1/admin/analytics/queries/knowledge-gaps
+Authorization: Bearer {{token}}
+
+###
+
+### Knowledge gaps — custom limit and date range
+GET {{baseUrl}}/api/v1/admin/analytics/queries/knowledge-gaps?limit=5&from=2026-06-01T00:00:00Z
+Authorization: Bearer {{token}}
+
+###
+
+### Session summary — all time
+GET {{baseUrl}}/api/v1/admin/analytics/sessions
+Authorization: Bearer {{token}}
+
+###
+
+### Session summary — date range
+GET {{baseUrl}}/api/v1/admin/analytics/sessions?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z
+Authorization: Bearer {{token}}
+
+###
+
+### Lawyer referral funnel — all time
+GET {{baseUrl}}/api/v1/admin/analytics/lawyers/funnel
+Authorization: Bearer {{token}}
+
+###
+
+### Lawyer referral funnel — date range
+GET {{baseUrl}}/api/v1/admin/analytics/lawyers/funnel?from=2026-01-01T00:00:00Z&to=2026-12-31T23:59:59Z
+Authorization: Bearer {{token}}
