@@ -159,7 +159,7 @@
 }
 
 .badge.fee {
-    background: var(--grey);
+    background: rgba(0, 0, 0, 0.06);
     color: rgba(0, 0, 0, 0.60);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -172,9 +172,11 @@
 .stats-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    border-radius: 14px;
+    background: var(--white);
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     margin-bottom: 24px;
 }
 
@@ -264,9 +266,10 @@
 
 .chat-context {
     background: rgba(52, 186, 235, 0.07);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 14px 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(52, 186, 235, 0.18);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -312,9 +315,11 @@
 }
 
 .review-card {
-    background: var(--grey);
-    border-radius: 12px;
+    background: var(--white);
+    border-radius: 8px;
     padding: 14px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -379,16 +384,16 @@
     justify-content: center;
     gap: 6px;
     padding: 11px 6px;
-    border-radius: 12px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 700;
     text-decoration: none;
-    border: none;
     background: var(--white);
     color: var(--black);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
-    transition: opacity 0.15s;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: opacity 0.15s, border-color 0.15s;
 }
 
 .act-btn:hover {

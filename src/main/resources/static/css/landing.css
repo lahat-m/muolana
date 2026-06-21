@@ -68,14 +68,14 @@ body {
     font-weight: 800;
     line-height: 1.2;
     letter-spacing: -0.5px;
-    margin: 50px 14px;
+    margin: 10px 14px;
 }
 
 .hero-sub {
     font-size: 16px;
     line-height: 1.6;
     color: rgba(0, 0, 0, 0.60);
-    margin-bottom: 28px;
+    margin: 28px 18px;
 }
 
 .disclaimer {

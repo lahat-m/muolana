@@ -30,6 +30,7 @@ body.app-page {
     flex-direction: column;
     height: 100dvh;
     overflow: hidden;
+    background: var(--grey);
 }
 
 /*  App header ─*/
