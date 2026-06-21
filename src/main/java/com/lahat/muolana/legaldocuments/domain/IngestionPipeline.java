@@ -1,17 +1,15 @@
 package com.lahat.muolana.legaldocuments.domain;
 
+import com.lahat.muolana.cloud.DocumentStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,17 +22,17 @@ class IngestionPipeline {
     private final LegalDocumentRepository documentRepository;
     private final IngestionStatusUpdater statusUpdater;
     private final VectorStoreWriter vectorStoreWriter;
+    private final DocumentStorageService storageService;
     private final TokenTextSplitter splitter;
-
-    @Value("${app.upload.dir:./uploads}")
-    private String uploadDir;
 
     IngestionPipeline(LegalDocumentRepository documentRepository,
                       IngestionStatusUpdater statusUpdater,
-                      VectorStoreWriter vectorStoreWriter) {
+                      VectorStoreWriter vectorStoreWriter,
+                      DocumentStorageService storageService) {
         this.documentRepository = documentRepository;
         this.statusUpdater = statusUpdater;
         this.vectorStoreWriter = vectorStoreWriter;
+        this.storageService = storageService;
         this.splitter = TokenTextSplitter.builder()
                 .withChunkSize(512)
                 .withMinChunkSizeChars(64)
@@ -49,16 +47,17 @@ class IngestionPipeline {
         LegalDocumentEntity doc = documentRepository.findById(docId)
                 .orElseThrow(() -> new IllegalStateException("Document not found: " + docId));
 
-        Path filePath = Paths.get(uploadDir).resolve(doc.getFilePath()).normalize();
-        if (!filePath.toFile().exists()) {
-            log.warn("File not found for document {}: {}", docId, filePath);
+        String objectKey = doc.getFilePath();
+        if (objectKey == null || objectKey.isBlank()) {
+            log.warn("No file stored for document {}", docId);
             return;
         }
 
         try {
             statusUpdater.markChunking(docId);
 
-            List<Document> pages = new TikaDocumentReader(new FileSystemResource(filePath)).get();
+            byte[] bytes = storageService.download(objectKey).readAllBytes();
+            List<Document> pages = new TikaDocumentReader(new ByteArrayResource(bytes)).get();
             String fullText = pages.stream()
                     .map(Document::getText)
                     .reduce("", (a, b) -> a + "\n" + b)
