@@ -685,3 +685,66 @@ a.citation-pill:hover {
     color: var(--text-muted);
     font-style: italic;
 }
+
+/* Floating Contact Lawyer FAB  */
+.fab {
+    position: fixed;
+    bottom: 84px;
+    right: 16px;
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    background: var(--blue);
+    border-radius: 28px;
+    box-shadow: 0 4px 14px rgba(52, 186, 235, 0.38);
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.fab:active {
+    cursor: grabbing;
+    box-shadow: 0 6px 20px rgba(52, 186, 235, 0.50);
+}
+
+.fab-btn {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: inherit;
+}
+
+.fab-btn img {
+    filter: brightness(0) invert(1);
+    pointer-events: none;
+}
+
+.fab-label {
+    display: block;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--white);
+    text-decoration: none;
+    opacity: 0;
+    padding: 0;
+    pointer-events: none;
+    transition: max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s,
+                padding-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fab.open .fab-label {
+    max-width: 160px;
+    opacity: 1;
+    padding-right: 18px;
+    pointer-events: auto;
+}
