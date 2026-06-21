@@ -23,7 +23,6 @@ body {
     color: var(--black);
 }
 
-/*  Full-height flex-column layout */
 /* Add class="app-page" to <body> for mobile-app pages */
 body.app-page {
     display: flex;

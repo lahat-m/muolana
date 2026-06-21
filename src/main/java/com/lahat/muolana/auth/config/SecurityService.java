@@ -17,18 +17,6 @@ public class SecurityService {
         return UserId.of(UUID.fromString(jwt.getClaimAsString("userId")));
     }
 
-    public boolean isCurrentUser(UUID userId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth.getPrincipal() instanceof Jwt jwt)) return false;
-        return Objects.equals(userId.toString(), jwt.getClaimAsString("userId"));
-    }
-
-    public boolean isCurrentUser(String userId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth.getPrincipal() instanceof Jwt jwt)) return false;
-        return Objects.equals(userId, jwt.getClaimAsString("userId"));
-    }
-
     public boolean hasRole(String role) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return false;
@@ -51,7 +39,7 @@ public class SecurityService {
 
     private Jwt requireJwt() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth.getPrincipal() instanceof Jwt jwt))
+        if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt))
             throw new SecurityException("No authenticated user found");
         return jwt;
     }
