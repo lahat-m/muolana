@@ -141,6 +141,16 @@
                 <label for="fBio">Bio</label>
                 <textarea id="fBio" placeholder="Brief professional background…"></textarea>
             </div>
+            <div class="field-row">
+                <div class="field">
+                    <label for="fPhone">Phone</label>
+                    <input id="fPhone" placeholder="e.g. +211 912 345 678" type="tel"/>
+                </div>
+                <div class="field">
+                    <label for="fEmail">Email</label>
+                    <input id="fEmail" placeholder="e.g. advocate@example.com" type="email"/>
+                </div>
+            </div>
             <div class="modal-error" id="modalError" role="alert">
                 <span id="modalErrorText"></span>
             </div>
@@ -435,6 +445,8 @@
     const fCity = document.getElementById('fCity');
     const fFee = document.getElementById('fFee');
     const fBio = document.getElementById('fBio');
+    const fPhone = document.getElementById('fPhone');
+    const fEmail = document.getElementById('fEmail');
 
     document.getElementById('addBtn').addEventListener('click', openCreate);
 
@@ -457,6 +469,8 @@
         fCity.value = lawyer.locationCity || '';
         fFee.value = lawyer.feeType || '';
         fBio.value = lawyer.bio || '';
+        fPhone.value = findContact(lawyer.contactMethods, 'PHONE') || '';
+        fEmail.value = findContact(lawyer.contactMethods, 'EMAIL') || '';
         clearModalError();
         openModal();
     }
@@ -516,13 +530,17 @@
         setModalLoading(true);
 
         try {
+            let savedId;
             if (editingId) {
                 await api('/api/v1/admin/lawyers/' + editingId, {method: 'PATCH', body: JSON.stringify(body)});
+                savedId = editingId;
                 showToast('Lawyer updated');
             } else {
-                await api('/api/v1/admin/lawyers', {method: 'POST', body: JSON.stringify(body)});
+                const created = await api('/api/v1/admin/lawyers', {method: 'POST', body: JSON.stringify(body)});
+                savedId = created.id;
                 showToast('Lawyer added');
             }
+            await saveContactMethods(savedId);
             closeModal();
             clearForm();
             loadLawyers();
@@ -540,6 +558,8 @@
         fCity.value = '';
         fFee.value = '';
         fBio.value = '';
+        fPhone.value = '';
+        fEmail.value = '';
     }
 
     function showModalError(msg) {
@@ -586,6 +606,35 @@
     confirmOverlay.addEventListener('click', clickEvent => {
         if (clickEvent.target === confirmOverlay) closeConfirm();
     });
+
+    // ── Contact methods ───────────────────────────────────────
+
+    function findContact(methods, channel) {
+        if (!methods) return null;
+        return (methods.find(m => m.channel === channel && m.isPrimary) || methods.find(m => m.channel === channel))?.value || null;
+    }
+
+    async function saveContactMethods(lawyerId) {
+        const existing = editingId ? (allLawyers.find(l => l.id === editingId)?.contactMethods || []) : [];
+        const updates = [
+            {channel: 'PHONE', newValue: fPhone.value.trim()},
+            {channel: 'EMAIL', newValue: fEmail.value.trim()}
+        ];
+        for (const entry of updates) {
+            const currentMethods = existing.filter(m => m.channel === entry.channel);
+            const currentValue = findContact(existing, entry.channel) || '';
+            if (entry.newValue === currentValue) continue;
+            for (const m of currentMethods) {
+                await api('/api/v1/admin/lawyers/' + lawyerId + '/contact-methods/' + m.id, {method: 'DELETE'});
+            }
+            if (entry.newValue) {
+                await api('/api/v1/admin/lawyers/' + lawyerId + '/contact-methods', {
+                    method: 'POST',
+                    body: JSON.stringify({channel: entry.channel, value: entry.newValue, isPrimary: true})
+                });
+            }
+        }
+    }
 
     // ── Helpers ───────────────────────────────────────────────
 

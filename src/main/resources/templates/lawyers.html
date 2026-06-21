@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Talk a Lawyer · Muolana</title>
+    <title>Talk to a Lawyer · Muolana</title>
     <link rel="stylesheet" th:href="@{/css/muolana.css}"/>
     <link rel="stylesheet" th:href="@{/css/lawyers.css}"/>
 </head>
@@ -14,7 +14,7 @@
     <a aria-label="Back" class="back-btn" href="/chat"><img alt="" aria-hidden="true"
                                                             height="20" th:src="@{/icons/arrow-left-icon.svg}" width="20"/></a>
     <div class="header-text">
-        <div class="header-title">Talk a Lawyer</div>
+        <div class="header-title">Talk to a Lawyer</div>
         <div class="header-sub">South Sudan Law Society verified</div>
     </div>
 </header>
@@ -24,46 +24,47 @@
     Your issue summary will be shared with consent only.
 </div>
 
-<!-- Filter panel -->
-<div class="filter-panel">
-    <div class="filter-inner">
-        <div class="filter-group filter-card">
-            <span class="filter-label">Specialisation</span>
-            <div class="chip-wrap" id="specFilters">
-                <button class="chip active" data-spec="All">All</button>
-                <button class="chip" data-spec="Family">Family</button>
-                <button class="chip" data-spec="Land">Land</button>
-                <button class="chip" data-spec="Criminal">Criminal</button>
-                <button class="chip" data-spec="Employment">Employment</button>
-                <button class="chip" data-spec="Business">Business</button>
-                <button class="chip" data-spec="Commercial">Commercial</button>
-                <button class="chip" data-spec="Administrative">Administrative</button>
+<!-- Lawyer list -->
+<div class="content-scroll">
+
+    <!-- Filter panel -->
+    <div class="filter-panel">
+        <div class="filter-inner">
+            <div class="filter-group filter-card">
+                <span class="filter-label">Specialisation</span>
+                <div class="chip-wrap" id="specFilters">
+                    <button class="chip active" data-spec="All">All</button>
+                    <button class="chip" data-spec="Family">Family</button>
+                    <button class="chip" data-spec="Land">Land</button>
+                    <button class="chip" data-spec="Criminal">Criminal</button>
+                    <button class="chip" data-spec="Employment">Employment</button>
+                    <button class="chip" data-spec="Business">Business</button>
+                    <button class="chip" data-spec="Commercial">Commercial</button>
+                    <button class="chip" data-spec="Administrative">Administrative</button>
+                </div>
             </div>
-        </div>
-        <div class="filter-group filter-card">
-            <span class="filter-label">Location</span>
-            <div class="chip-wrap" id="locFilters">
-                <button class="chip" data-state="Lakes">Lakes</button>
-                <button class="chip" data-state="Central Equatoria">Central Equatoria</button>
-                <button class="chip" data-state="Eastern Equatoria">Eastern Equatoria</button>
-                <button class="chip" data-state="Jonglei">Jonglei</button>
-                <button class="chip" data-state="Northern Bahr el Ghazal">Northern Bahr el Ghazal</button>
-                <button class="chip" data-state="Unity">Unity</button>
-                <button class="chip" data-state="Upper Nile">Upper Nile</button>
-                <button class="chip" data-state="Warrap">Warrap</button>
-                <button class="chip" data-state="Western Bahr el Ghazal">Western Bahr el Ghazal</button>
-                <button class="chip" data-state="Western Equatoria">Western Equatoria</button>
-                <button class="chip" data-state="Abyei Administrative Area">Abyei</button>
-                <button class="chip" data-state="Greater Pibor Administrative Area">Greater Pibor</button>
-                <button class="chip" data-state="Ruweng Administrative Area">Ruweng</button>
-                <button class="chip" id="freeOnlyChip">Free / Pro bono</button>
+            <div class="filter-group filter-card">
+                <span class="filter-label">Location</span>
+                <div class="chip-wrap" id="locFilters">
+                    <button class="chip" data-state="Lakes">Lakes</button>
+                    <button class="chip" data-state="Central Equatoria">Central Equatoria</button>
+                    <button class="chip" data-state="Eastern Equatoria">Eastern Equatoria</button>
+                    <button class="chip" data-state="Jonglei">Jonglei</button>
+                    <button class="chip" data-state="Northern Bahr el Ghazal">Northern Bahr el Ghazal</button>
+                    <button class="chip" data-state="Unity">Unity</button>
+                    <button class="chip" data-state="Upper Nile">Upper Nile</button>
+                    <button class="chip" data-state="Warrap">Warrap</button>
+                    <button class="chip" data-state="Western Bahr el Ghazal">Western Bahr el Ghazal</button>
+                    <button class="chip" data-state="Western Equatoria">Western Equatoria</button>
+                    <button class="chip" data-state="Abyei Administrative Area">Abyei</button>
+                    <button class="chip" data-state="Greater Pibor Administrative Area">Greater Pibor</button>
+                    <button class="chip" data-state="Ruweng Administrative Area">Ruweng</button>
+                    <button class="chip" id="freeOnlyChip">Free / Pro bono</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Lawyer list -->
-<div class="content-scroll">
     <div class="lawyers-list" id="lawyerList">
         <!-- Skeleton placeholders -->
         <div class="skeleton-card">

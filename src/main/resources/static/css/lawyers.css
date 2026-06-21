@@ -26,16 +26,13 @@
 }
 
 .filter-panel {
-    flex-shrink: 0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .filter-inner {
     max-width: 600px;
     margin: 0 auto;
-    padding: 14px 16px 4px;
+    padding: 14px 16px 12px;
     display: flex;
-    flex-direction: column;
     gap: 12px;
 }
 
@@ -55,9 +52,10 @@
 
 .filter-card {
     background: var(--white);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 10px 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .chip-wrap {
@@ -103,16 +101,18 @@
 }
 
 .lawyer-card {
-    border-radius: 14px;
+    border-radius: 8px;
     overflow: hidden;
     background: var(--white);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: box-shadow 0.15s;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.15s, border-color 0.15s;
 }
 
 .lawyer-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.09);
 }
 
 .card-top {
@@ -175,7 +175,7 @@
 }
 
 .tag.tag-fee {
-    background: var(--grey);
+    background: rgba(0, 0, 0, 0.06);
     color: rgba(0, 0, 0, 0.60);
 }
 
@@ -198,7 +198,7 @@
     cursor: pointer;
     border: none;
     border-radius: 10px;
-    background: var(--grey);
+    background: rgba(0, 0, 0, 0.05);
     color: rgba(0, 0, 0, 0.65);
     transition: background 0.12s, color 0.12s;
 }
@@ -244,8 +244,9 @@
 }
 
 .skeleton-card {
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
     padding: 14px;
     display: flex;
     gap: 12px;
