@@ -26,16 +26,13 @@
 }
 
 .filter-panel {
-    flex-shrink: 0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .filter-inner {
     max-width: 600px;
     margin: 0 auto;
-    padding: 14px 16px 4px;
+    padding: 14px 16px 12px;
     display: flex;
-    flex-direction: column;
     gap: 12px;
 }
 
