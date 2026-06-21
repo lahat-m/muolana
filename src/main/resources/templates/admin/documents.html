@@ -667,7 +667,7 @@
         toastTimer = setTimeout(() => toastElement.classList.remove('show'), 3000);
     }
 
-    // ── Preview drawer ────────────────────────────────────────
+    // Preview drawer
     const previewOverlay   = document.getElementById('previewOverlay');
     const previewDrawer    = document.getElementById('previewDrawer');
     const previewDocTitle  = document.getElementById('previewDocTitle');
@@ -711,6 +711,8 @@
         loadPreviewContent(doc);
     }
 
+    function isMobileViewport() { return window.innerWidth < 768; }
+
     async function loadPreviewContent(doc) {
         if (!doc.filePath) {
             previewBody.innerHTML = '<div class="preview-no-file"><p>No file is attached to this document.</p></div>';
@@ -732,12 +734,23 @@
             const blob = await resp.blob();
             if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
             previewBlobUrl = URL.createObjectURL(blob);
-            const iframe = document.createElement('iframe');
-            iframe.className = 'preview-iframe';
-            iframe.src = previewBlobUrl;
-            iframe.title = 'Document preview';
-            previewBody.innerHTML = '';
-            previewBody.appendChild(iframe);
+            if (isMobileViewport()) {
+                /* iOS Safari and mobile Chrome cannot render PDFs in iframes with blob URLs.
+                   Open the blob URL in a new tab — Safari opens it in its native PDF viewer. */
+                previewBody.innerHTML = '<div class="preview-no-file">' +
+                    '<p>Tap below to open the PDF in your browser\'s viewer.</p>' +
+                    '<button class="preview-dl-btn" id="previewOpenMobileBtn">Open PDF</button></div>';
+                document.getElementById('previewOpenMobileBtn').addEventListener('click', function () {
+                    window.open(previewBlobUrl, '_blank', 'noopener');
+                });
+            } else {
+                const iframe = document.createElement('iframe');
+                iframe.className = 'preview-iframe';
+                iframe.src = previewBlobUrl;
+                iframe.title = 'Document preview';
+                previewBody.innerHTML = '';
+                previewBody.appendChild(iframe);
+            }
         } catch (e) {
             previewBody.innerHTML = '<div class="preview-no-file"><p>Could not load preview: ' + e.message + '</p>' +
                 '<button class="preview-dl-btn" id="previewDlFallbackBtn">Download instead</button></div>';
@@ -803,7 +816,7 @@
         return map[status] || '';
     }
 
-    // ── Boot ─────────────────────────────────────────────────
+    // Boot
     loadDocuments(0).then(() => {
         const hasProcessing = document.querySelectorAll('.doc-item.processing').length > 0;
         if (hasProcessing) startProcessingPoll();

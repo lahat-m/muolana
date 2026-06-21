@@ -141,11 +141,6 @@
     border-bottom: none;
 }
 
-/*.doc-icon {*/
-/*    width: 38px; height: 44px; flex-shrink: 0;*/
-/*    border-radius: 7px;*/
-/*    display: flex; align-items: center; justify-content: center;*/
-/*}*/
 .doc-icon svg {
     width: 20px;
     height: 20px;
@@ -279,7 +274,7 @@
     cursor: default;
 }
 
-/* ── Ingestion progress ───────────────────────────────────── */
+/* Ingestion progress*/
 
 .doc-status.processing-text {
     color: #3b82f6;
@@ -377,7 +372,6 @@
     height: 2px;
     background: #dde3ec;
     margin-top: 3px;
-    flex-shrink: 1;
     min-width: 8px;
 }
 
@@ -385,7 +379,7 @@
     background: #10b981;
 }
 
-/* ── File upload modal ────────────────────────────────────── */
+/* File upload modal */
 
 .file-chip {
     display: flex;
@@ -412,7 +406,7 @@
     text-overflow: ellipsis;
 }
 
-/* ── Document preview drawer ─────────────────────────────── */
+/* Document preview drawer*/
 .preview-overlay {
     position: fixed;
     inset: 0;
@@ -553,14 +547,44 @@
     text-decoration: none;
 }
 
-.p-chip.cat { background: rgba(52, 186, 235, 0.10); color: var(--blue); }
-.p-chip.st-ingested { background: rgba(16, 185, 129, 0.10); color: #059669; }
-.p-chip.st-verified { background: rgba(52, 186, 235, 0.10); color: var(--blue); }
-.p-chip.st-processing { background: rgba(245, 158, 11, 0.10); color: #d97706; }
-.p-chip.st-pending { background: rgba(0, 0, 0, 0.06); color: rgba(0, 0, 0, 0.55); }
-.p-chip.st-rejected { background: rgba(220, 38, 38, 0.08); color: #dc2626; }
-.p-chip.source { background: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.60); }
-.p-chip.source:hover { background: rgba(0, 0, 0, 0.08); }
+.p-chip.cat {
+    background: rgba(52, 186, 235, 0.10);
+    color: var(--blue);
+}
+
+.p-chip.st-ingested {
+    background: rgba(16, 185, 129, 0.10);
+    color: #059669;
+}
+
+.p-chip.st-verified {
+    background: rgba(52, 186, 235, 0.10);
+    color: var(--blue);
+}
+
+.p-chip.st-processing {
+    background: rgba(245, 158, 11, 0.10);
+    color: #d97706;
+}
+
+.p-chip.st-pending {
+    background: rgba(0, 0, 0, 0.06);
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.p-chip.st-rejected {
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+}
+
+.p-chip.source {
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.60);
+}
+
+.p-chip.source:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
 
 .preview-body {
     flex: 1;
@@ -630,4 +654,48 @@
 
 .preview-dl-btn:hover {
     opacity: 0.88;
+}
+
+/* Mobile: bottom-sheet drawer  */
+@media (max-width: 767px) {
+    /* Slide up from the bottom instead of in from the right */
+    .preview-drawer {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 92dvh;
+        transform: translateY(100%);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 28px rgba(0, 0, 0, 0.18);
+    }
+
+    .preview-drawer.open {
+        transform: translateY(0);
+    }
+
+    /* Compact header: stack actions below the title on narrow screens */
+    .preview-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 14px 14px 10px;
+    }
+
+    .preview-hdr-info {
+        width: 100%;
+    }
+
+    .preview-hdr-actions {
+        width: 100%;
+        justify-content: flex-end;
+        padding-top: 0;
+    }
+
+    .preview-act-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
 }

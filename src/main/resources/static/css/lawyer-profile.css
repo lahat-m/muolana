@@ -188,7 +188,6 @@
     padding: 14px 8px;
 }
 
-/*.stat-cell + .stat-cell { border-left: 1px solid var(--border); }*/
 .stat-num {
     font-size: 22px;
     font-weight: 800;

@@ -189,7 +189,7 @@
     let editingId = null;
     let confirmAction = null;
 
-    // ── Sidebar ────────────────────────────────────────────────
+    // Sidebar─
     const adminSidebar = document.getElementById('adminSidebar');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
     const hamburgerBtn = document.getElementById('hamburgerBtn');
@@ -223,7 +223,7 @@
         window.location.replace('/admin/login');
     });
 
-    // ── Fetch helper ─────────────────────────────────────────
+    // Fetch helper
 
     async function api(path, options = {}) {
         const response = await fetch(path, {
@@ -243,7 +243,7 @@
         return response.status === 204 ? null : response.json();
     }
 
-    // ── Load ─────────────────────────────────────────────────
+    // Load
 
     async function loadLawyers() {
         try {
@@ -258,7 +258,7 @@
         }
     }
 
-    // ── Search ────────────────────────────────────────────────
+    // Search
 
     document.getElementById('searchInput').addEventListener('input', inputEvent => {
         const searchQuery = inputEvent.target.value.toLowerCase().trim();
@@ -271,7 +271,7 @@
         renderList(filtered);
     });
 
-    // ── Render list ───────────────────────────────────────────
+    // Render list
 
     function renderList(lawyers) {
         const list = document.getElementById('lawyerList');
@@ -309,7 +309,7 @@
         lawyers.forEach(lawyer => list.appendChild(buildCard(lawyer)));
     }
 
-    // ── Build card ────────────────────────────────────────────
+    // Build card
 
     function buildCard(lawyer) {
         const status = (lawyer.status || 'PENDING').toUpperCase();
@@ -399,7 +399,7 @@
         return btn;
     }
 
-    // ── API actions ───────────────────────────────────────────
+    // API actions
 
     async function doApprove(id) {
         try {
@@ -431,7 +431,7 @@
         }
     }
 
-    // ── Add / Edit modal ──────────────────────────────────────
+    // Add / Edit modal
 
     const modalOverlay = document.getElementById('modalOverlay');
     const modalTitleEl = document.getElementById('modalTitle');
@@ -576,7 +576,7 @@
         modalSubmitBtn.classList.toggle('loading', on);
     }
 
-    // ── Confirm dialog ────────────────────────────────────────
+    // Confirm dialog─
 
     const confirmOverlay = document.getElementById('confirmOverlay');
 
@@ -607,7 +607,7 @@
         if (clickEvent.target === confirmOverlay) closeConfirm();
     });
 
-    // ── Contact methods ───────────────────────────────────────
+    // Contact methods
 
     function findContact(methods, channel) {
         if (!methods) return null;
@@ -636,7 +636,7 @@
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────
+    // Helpers
 
     function initials(name) {
         const clean = name.replace(/^(Advocate|Adv\.|Dr\.|Prof\.)\s+/i, '').trim();
@@ -655,7 +655,7 @@
         return feeType || '';
     }
 
-    // ── Toast ─────────────────────────────────────────────────
+    // Toast
 
     let toastTimer;
 

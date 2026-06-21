@@ -738,8 +738,8 @@ a.citation-pill:hover {
     padding: 0;
     pointer-events: none;
     transition: max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.2s,
-                padding-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 0.2s,
+    padding-right 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fab.open .fab-label {
