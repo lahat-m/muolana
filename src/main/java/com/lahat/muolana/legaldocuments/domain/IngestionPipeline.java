@@ -56,7 +56,10 @@ class IngestionPipeline {
         try {
             statusUpdater.markChunking(docId);
 
-            byte[] bytes = storageService.download(objectKey).readAllBytes();
+            byte[] bytes;
+            try (var stream = storageService.download(objectKey)) {
+                bytes = stream.readAllBytes();
+            }
             List<Document> pages = new TikaDocumentReader(new ByteArrayResource(bytes)).get();
             String fullText = pages.stream()
                     .map(Document::getText)

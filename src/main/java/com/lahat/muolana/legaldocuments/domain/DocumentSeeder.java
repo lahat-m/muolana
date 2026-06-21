@@ -45,7 +45,10 @@ class DocumentSeeder implements ApplicationRunner {
             }
 
             try {
-                byte[] bytes = resource.getInputStream().readAllBytes();
+                byte[] bytes;
+                try (var in = resource.getInputStream()) {
+                    bytes = in.readAllBytes();
+                }
                 String objectKey = storageService.store(bytes, seed.filename);
 
                 LegalDocumentEntity doc = new LegalDocumentEntity(

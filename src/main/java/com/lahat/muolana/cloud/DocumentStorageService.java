@@ -30,9 +30,8 @@ public class DocumentStorageService {
 
     public String store(byte[] bytes, String originalFilename) {
         String ext = extension(originalFilename);
-        if (!ALLOWED_EXTENSIONS.contains(ext)) {
+        if (!ALLOWED_EXTENSIONS.contains(ext))
             throw new StorageException("Only PDF and DOCX files are allowed, got: ." + ext);
-        }
         String objectKey = "documents/" + UUID.randomUUID() + "_" + sanitize(originalFilename);
         try (ByteArrayInputStream is = new ByteArrayInputStream(bytes)) {
             minioClient.putObject(PutObjectArgs.builder()
