@@ -50,7 +50,7 @@
 <div class="action-bar">
     <div class="action-bar-inner">
         <a class="act-btn primary" id="callBtn" href="#" aria-disabled="true">Call</a>
-        <a class="act-btn" id="bookBtn" href="#">Book</a>
+        <a class="act-btn" id="bookBtn" href="#" aria-disabled="true">Book</a>
     </div>
 </div>
 
@@ -200,7 +200,41 @@
             const bioParagraph = document.createElement('p');
             bioParagraph.className = 'bio-text';
             bioParagraph.textContent = lawyer.bio;
-            sec.appendChild(p);
+            sec.appendChild(bioParagraph);
+            inner.appendChild(sec);
+        }
+
+        // Contact
+        const phone = findContact(lawyer.contactMethods, 'PHONE');
+        const email = findContact(lawyer.contactMethods, 'EMAIL');
+        if (phone || email) {
+            const sec = section('Contact');
+            if (phone) {
+                const row = document.createElement('div');
+                row.className = 'contact-item';
+                const lbl = document.createElement('span');
+                lbl.className = 'contact-label';
+                lbl.textContent = 'Phone';
+                const link = document.createElement('a');
+                link.href = 'tel:' + phone;
+                link.className = 'contact-value';
+                link.textContent = phone;
+                row.appendChild(lbl); row.appendChild(link);
+                sec.appendChild(row);
+            }
+            if (email) {
+                const row = document.createElement('div');
+                row.className = 'contact-item';
+                const lbl = document.createElement('span');
+                lbl.className = 'contact-label';
+                lbl.textContent = 'Email';
+                const link = document.createElement('a');
+                link.href = 'mailto:' + email;
+                link.className = 'contact-value';
+                link.textContent = email;
+                row.appendChild(lbl); row.appendChild(link);
+                sec.appendChild(row);
+            }
             inner.appendChild(sec);
         }
 
@@ -249,12 +283,21 @@
         inner.appendChild(reviewSec);
 
         // Wire action buttons
-        const phone = findContact(lawyer.contactMethods, 'PHONE');
+        const callPhone = findContact(lawyer.contactMethods, 'PHONE');
         const callBtn = document.getElementById('callBtn');
-
-        if (phone) {
-            callBtn.href = 'tel:' + phone;
+        if (callPhone) {
+            callBtn.href = 'tel:' + callPhone;
             callBtn.removeAttribute('aria-disabled');
+        }
+
+        const bookEmail = findContact(lawyer.contactMethods, 'EMAIL');
+        const bookBtn = document.getElementById('bookBtn');
+        if (bookEmail) {
+            bookBtn.href = 'mailto:' + bookEmail;
+            bookBtn.textContent = 'Email';
+            bookBtn.removeAttribute('aria-disabled');
+        } else {
+            bookBtn.setAttribute('aria-disabled', 'true');
         }
     }
 

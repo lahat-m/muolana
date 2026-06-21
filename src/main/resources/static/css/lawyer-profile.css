@@ -238,6 +238,34 @@
     line-height: 1.5;
 }
 
+.contact-item {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 4px 0;
+}
+
+.contact-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: 44px;
+    flex-shrink: 0;
+}
+
+.contact-value {
+    font-size: 14px;
+    color: var(--blue);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.contact-value:hover {
+    text-decoration: underline;
+}
+
 .location-row {
     display: flex;
     align-items: flex-start;
