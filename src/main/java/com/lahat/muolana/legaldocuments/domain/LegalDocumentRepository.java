@@ -22,6 +22,8 @@ interface LegalDocumentRepository extends JpaRepository<LegalDocumentEntity, UUI
 
     boolean existsByFilePath(String filePath);
 
+    boolean existsByShortName(String shortName);
+
     default LegalDocumentEntity getById(UUID id) {
         return findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Legal document " + id + " not found"));

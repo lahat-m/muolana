@@ -1,20 +1,15 @@
 package com.lahat.muolana.legaldocuments.domain;
 
+import com.lahat.muolana.cloud.DocumentStorageService;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 @Component
@@ -24,55 +19,44 @@ class DocumentSeeder implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(DocumentSeeder.class);
 
     private final LegalDocumentRepository documentRepository;
+    private final DocumentStorageService storageService;
     private final IngestionPipeline ingestionPipeline;
 
-    @Value("${app.upload.dir:./uploads}")
-    private String uploadDir;
-
     DocumentSeeder(LegalDocumentRepository documentRepository,
+                   DocumentStorageService storageService,
                    IngestionPipeline ingestionPipeline) {
         this.documentRepository = documentRepository;
+        this.storageService = storageService;
         this.ingestionPipeline = ingestionPipeline;
     }
 
     @Override
-    public void run(@NonNull ApplicationArguments args) throws IOException {
-        Path uploadPath = Paths.get(uploadDir);
-        Files.createDirectories(uploadPath);
-
+    public void run(@NonNull ApplicationArguments args) {
         for (SeedDoc seed : SeedDoc.ALL) {
-            if (documentRepository.existsByFilePath(seed.filename)) {
+            if (documentRepository.existsByShortName(seed.shortName)) {
                 log.info("Already ingested — skipping: {}", seed.shortName);
                 continue;
             }
 
-            if (!copyToUploadDir(seed.filename, uploadPath)) {
-                continue; // classpath resource missing — skip without failing startup
+            ClassPathResource resource = new ClassPathResource("documents/" + seed.filename);
+            if (!resource.exists()) {
+                log.warn("Classpath resource missing — documents/{}", seed.filename);
+                continue;
             }
 
-            LegalDocumentEntity doc = new LegalDocumentEntity(
-                    seed.title, seed.shortName, seed.category, seed.versionLabel, null, seed.filename);
-            doc.verify(); // mark VERIFIED so pipeline transitions it to INGESTED
-            LegalDocumentEntity saved = documentRepository.save(doc);
-            ingestionPipeline.ingest(saved.getId());
-            log.info("Ingestion queued: {}", seed.shortName);
-        }
-    }
+            try {
+                byte[] bytes = resource.getInputStream().readAllBytes();
+                String objectKey = storageService.store(bytes, seed.filename);
 
-    private boolean copyToUploadDir(String filename, Path uploadPath) {
-        ClassPathResource resource = new ClassPathResource("documents/" + filename);
-        if (!resource.exists()) {
-            log.warn("Classpath resource missing — documents/{}", filename);
-            return false;
-        }
-        Path dest = uploadPath.resolve(filename).normalize();
-        if (Files.exists(dest)) return true; // already copied from a prior run
-        try {
-            Files.copy(resource.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
-            return true;
-        } catch (IOException ioException) {
-            log.error("Failed to copy {} to upload dir", filename, ioException);
-            return false;
+                LegalDocumentEntity doc = new LegalDocumentEntity(
+                        seed.title, seed.shortName, seed.category, seed.versionLabel, null, objectKey);
+                doc.verify();
+                LegalDocumentEntity saved = documentRepository.save(doc);
+                ingestionPipeline.ingest(saved.getId());
+                log.info("Uploaded to MinIO and queued ingestion: {}", seed.shortName);
+            } catch (Exception e) {
+                log.error("Failed to seed document '{}': {}", seed.shortName, e.getMessage(), e);
+            }
         }
     }
 
