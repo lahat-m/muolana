@@ -174,6 +174,26 @@
     </div>
 </div>
 
+<!-- Preview drawer -->
+<div class="preview-overlay" id="previewOverlay"></div>
+<aside aria-label="Document preview" class="preview-drawer" id="previewDrawer">
+    <div class="preview-header">
+        <div class="preview-hdr-info">
+            <p class="preview-doc-title" id="previewDocTitle"></p>
+            <p class="preview-doc-sub" id="previewDocSub"></p>
+        </div>
+        <div class="preview-hdr-actions">
+            <button class="preview-act-btn" id="previewDownloadBtn">Download</button>
+            <button class="preview-act-btn danger" id="previewDeleteBtn">Delete</button>
+            <button aria-label="Close preview" class="preview-close-btn" id="previewCloseBtn">
+                <img alt="" aria-hidden="true" height="14" src="/icons/cancel-icon.svg" width="14"/>
+            </button>
+        </div>
+    </div>
+    <div class="preview-chips" id="previewChips"></div>
+    <div class="preview-body" id="previewBody"></div>
+</aside>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -205,6 +225,7 @@
     sidebarBackdrop.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', keyboardEvent => {
         if (keyboardEvent.key === 'Escape') {
+            closePreview();
             closeSidebar();
             closeModal();
         }
@@ -549,6 +570,8 @@
             item.appendChild(buildProgressSteps(doc.status));
         }
 
+        item.addEventListener('click', () => openPreview(doc));
+
         return item;
     }
 
@@ -644,6 +667,143 @@
         toastTimer = setTimeout(() => toastElement.classList.remove('show'), 3000);
     }
 
+    // ── Preview drawer ────────────────────────────────────────
+    const previewOverlay   = document.getElementById('previewOverlay');
+    const previewDrawer    = document.getElementById('previewDrawer');
+    const previewDocTitle  = document.getElementById('previewDocTitle');
+    const previewDocSub    = document.getElementById('previewDocSub');
+    const previewChips     = document.getElementById('previewChips');
+    const previewBody      = document.getElementById('previewBody');
+    const previewCloseBtn  = document.getElementById('previewCloseBtn');
+    const previewDownloadBtn = document.getElementById('previewDownloadBtn');
+    const previewDeleteBtn = document.getElementById('previewDeleteBtn');
+
+    let previewDoc = null;
+    let previewBlobUrl = null;
+
+    function openPreview(doc) {
+        previewDoc = doc;
+
+        previewDocTitle.textContent = doc.title || doc.shortName;
+        previewDocSub.textContent = doc.shortName + (doc.versionLabel ? ' · ' + doc.versionLabel : '');
+
+        previewChips.innerHTML = '';
+        const chipDefs = [
+            { label: doc.category.charAt(0) + doc.category.slice(1).toLowerCase().replace(/_/g, ' '), cls: 'cat' },
+            { label: chipStatusLabel(doc.status), cls: chipStatusCls(doc.status) }
+        ];
+        if (doc.sourceUrl) {
+            chipDefs.push({ label: 'Source ↗', cls: 'source', href: doc.sourceUrl });
+        }
+        chipDefs.forEach(def => {
+            const el = def.href ? document.createElement('a') : document.createElement('span');
+            el.className = 'p-chip ' + def.cls;
+            el.textContent = def.label;
+            if (def.href) { el.href = def.href; el.target = '_blank'; el.rel = 'noopener noreferrer'; }
+            previewChips.appendChild(el);
+        });
+
+        previewBody.innerHTML = '<div class="preview-loading"><div class="preview-spin"></div><p>Loading preview…</p></div>';
+        previewOverlay.classList.add('open');
+        previewDrawer.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        loadPreviewContent(doc);
+    }
+
+    async function loadPreviewContent(doc) {
+        if (!doc.filePath) {
+            previewBody.innerHTML = '<div class="preview-no-file"><p>No file is attached to this document.</p></div>';
+            return;
+        }
+        const isPdf = doc.filePath.toLowerCase().endsWith('.pdf');
+        if (!isPdf) {
+            previewBody.innerHTML = '<div class="preview-no-file">' +
+                '<p>DOCX files cannot be previewed in the browser.</p>' +
+                '<button class="preview-dl-btn" id="previewDlLargeBtn">Download to view</button></div>';
+            document.getElementById('previewDlLargeBtn').addEventListener('click', () => downloadDoc(doc));
+            return;
+        }
+        try {
+            const resp = await fetch('/api/v1/admin/legal-documents/' + doc.id + '/file', {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const blob = await resp.blob();
+            if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+            previewBlobUrl = URL.createObjectURL(blob);
+            const iframe = document.createElement('iframe');
+            iframe.className = 'preview-iframe';
+            iframe.src = previewBlobUrl;
+            iframe.title = 'Document preview';
+            previewBody.innerHTML = '';
+            previewBody.appendChild(iframe);
+        } catch (e) {
+            previewBody.innerHTML = '<div class="preview-no-file"><p>Could not load preview: ' + e.message + '</p>' +
+                '<button class="preview-dl-btn" id="previewDlFallbackBtn">Download instead</button></div>';
+            document.getElementById('previewDlFallbackBtn').addEventListener('click', () => downloadDoc(doc));
+        }
+    }
+
+    function closePreview() {
+        previewOverlay.classList.remove('open');
+        previewDrawer.classList.remove('open');
+        document.body.style.overflow = '';
+        previewBody.innerHTML = '';
+        previewDoc = null;
+        if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); previewBlobUrl = null; }
+    }
+
+    async function downloadDoc(doc) {
+        try {
+            const resp = await fetch('/api/v1/admin/legal-documents/' + doc.id + '/file', {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const ext = doc.filePath && doc.filePath.toLowerCase().endsWith('.docx') ? '.docx' : '.pdf';
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (doc.shortName || 'document') + ext;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            showToast('Download failed: ' + e.message);
+        }
+    }
+
+    previewCloseBtn.addEventListener('click', closePreview);
+    previewOverlay.addEventListener('click', closePreview);
+
+    previewDownloadBtn.addEventListener('click', () => { if (previewDoc) downloadDoc(previewDoc); });
+
+    previewDeleteBtn.addEventListener('click', async () => {
+        if (!previewDoc) return;
+        if (!confirm('Delete "' + (previewDoc.shortName || previewDoc.title) + '"? This cannot be undone.')) return;
+        try {
+            await api('/api/v1/admin/legal-documents/' + previewDoc.id, { method: 'DELETE' });
+            showToast('Document deleted');
+            closePreview();
+            await loadDocuments(0);
+        } catch (e) {
+            if (e.message !== 'unauthorized') showToast('Delete failed: ' + e.message);
+        }
+    });
+
+    function chipStatusLabel(status) {
+        const map = { INGESTED: 'Ingested', VERIFIED: 'Verified', CHUNKING: 'Chunking…',
+                      EMBEDDING: 'Embedding…', PENDING: 'Pending', REJECTED: 'Rejected' };
+        return map[status] || status;
+    }
+
+    function chipStatusCls(status) {
+        const map = { INGESTED: 'st-ingested', VERIFIED: 'st-verified', CHUNKING: 'st-processing',
+                      EMBEDDING: 'st-processing', PENDING: 'st-pending', REJECTED: 'st-rejected' };
+        return map[status] || '';
+    }
+
+    // ── Boot ─────────────────────────────────────────────────
     loadDocuments(0).then(() => {
         const hasProcessing = document.querySelectorAll('.doc-item.processing').length > 0;
         if (hasProcessing) startProcessingPoll();
