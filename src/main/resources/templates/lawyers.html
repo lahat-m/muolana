@@ -264,9 +264,12 @@
         const actions = document.createElement('div');
         actions.className = 'card-actions';
         const phone = findContact(lawyer.contactMethods, 'PHONE');
+        const email = findContact(lawyer.contactMethods, 'EMAIL');
 
         actions.appendChild(actionBtn(true, phoneSvg(), 'Call',
             phone ? 'tel:' + phone : null));
+        actions.appendChild(actionBtn(false, emailSvg(), 'Email',
+            email ? 'mailto:' + email : null));
         actions.appendChild(actionBtn(false, calendarSvg(), 'Book', '#'));
 
         card.appendChild(actions);
@@ -316,6 +319,10 @@
 
     function phoneSvg() {
         return '<img src="/icons/call-icon.svg" width="15" height="15" alt="" aria-hidden="true" style="flex-shrink:0"/>';
+    }
+
+    function emailSvg() {
+        return '<img src="/icons/email-icon.svg" width="15" height="15" alt="" aria-hidden="true" style="flex-shrink:0"/>';
     }
 
     function calendarSvg() {
