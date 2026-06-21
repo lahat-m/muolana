@@ -155,6 +155,16 @@
         });
         inner.appendChild(statsRow);
 
+        // Bio
+        if (lawyer.bio) {
+            const sec = section('About');
+            const bioParagraph = document.createElement('p');
+            bioParagraph.className = 'bio-text';
+            bioParagraph.textContent = lawyer.bio;
+            sec.appendChild(bioParagraph);
+            inner.appendChild(sec);
+        }
+
         // Specialisations
         if (specs.length) {
             const sec = section('Specialisations');
@@ -191,16 +201,6 @@
             locationText.textContent = lawyer.locationCity + ' — available Mon–Fri';
             row.appendChild(locationText);
             sec.appendChild(row);
-            inner.appendChild(sec);
-        }
-
-        // Bio
-        if (lawyer.bio) {
-            const sec = section('About');
-            const bioParagraph = document.createElement('p');
-            bioParagraph.className = 'bio-text';
-            bioParagraph.textContent = lawyer.bio;
-            sec.appendChild(bioParagraph);
             inner.appendChild(sec);
         }
 
