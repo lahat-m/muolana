@@ -1,5 +1,6 @@
 package com.lahat.muolana.legaldocuments.domain;
 
+import com.lahat.muolana.cloud.DocumentStorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -17,13 +18,16 @@ public class LegalDocumentService {
     private final LegalDocumentRepository documentRepository;
     private final ChunkRepository chunkRepository;
     private final IngestionPipeline ingestionPipeline;
+    private final DocumentStorageService storageService;
 
     public LegalDocumentService(LegalDocumentRepository documentRepository,
                                 ChunkRepository chunkRepository,
-                                IngestionPipeline ingestionPipeline) {
+                                IngestionPipeline ingestionPipeline,
+                                DocumentStorageService storageService) {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
         this.ingestionPipeline = ingestionPipeline;
+        this.storageService = storageService;
     }
 
     public LegalDocumentVM upload(UploadDocumentCmd cmd) {
@@ -92,7 +96,14 @@ public class LegalDocumentService {
 
     public void delete(UUID docId) {
         LegalDocumentEntity doc = documentRepository.getById(docId);
+        String objectKey = doc.getFilePath();
         documentRepository.delete(doc);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                storageService.delete(objectKey);
+            }
+        });
     }
 
     @Transactional(readOnly = true)
