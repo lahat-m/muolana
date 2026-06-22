@@ -33,7 +33,7 @@
 <div class="input-wrap">
     <div class="input-inner">
         <input autocomplete="off" disabled id="chatInput" placeholder="Starting session…" type="text"/>
-        <button aria-label="Send" class="send-btn" disabled id="sendBtn">
+        <button aria-label="Send" class="send-btn" disabled id="sendBtn" style="display:none">
             <img alt="" aria-hidden="true" height="20" src="/icons/chat-icon.svg" width="20"/>
         </button>
     </div>
@@ -261,7 +261,14 @@
             send();
         }
     });
+    chatInput.addEventListener('input', updateSendBtn);
     sendBtn.addEventListener('click', send);
+
+    function updateSendBtn() {
+        const show = !chatInput.disabled && chatInput.value.trim().length > 0;
+        sendBtn.style.display = show ? '' : 'none';
+        sendBtn.disabled = !show;
+    }
 
     async function send() {
         const text = chatInput.value.trim();
@@ -535,8 +542,8 @@
 
     function setInputEnabled(enabled) {
         chatInput.disabled = !enabled;
-        sendBtn.disabled = !enabled;
         if (enabled) chatInput.focus();
+        updateSendBtn();
     }
 
     function scrollBottom() {
