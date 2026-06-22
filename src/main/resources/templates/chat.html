@@ -247,6 +247,7 @@
             saveSession(sessionId, 'New chat');
             chatInput.placeholder = 'Ask a legal question…';
             setInputEnabled(true);
+            showIntro();
         } catch (error) {
             sessionSub.textContent = 'Connection failed — refresh to retry';
             chatInput.placeholder = 'Session unavailable — refresh the page';
@@ -489,6 +490,74 @@
         note.textContent = 'Legal information only. Not legal advice. Verify with a licensed advocate.';
         bubble.appendChild(note);
         scrollBottom();
+    }
+
+    // Intro
+
+    function showIntro() {
+        const row = document.createElement('div');
+        row.className = 'bubble-row assistant';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'assistant-bubble intro-bubble';
+
+        const header = document.createElement('div');
+        header.className = 'intro-header';
+        const icon = document.createElement('img');
+        icon.src = '/icons/connect-with-lawyer-icon.svg';
+        icon.className = 'intro-icon';
+        icon.alt = '';
+        icon.setAttribute('aria-hidden', 'true');
+        const title = document.createElement('p');
+        title.className = 'intro-title';
+        title.textContent = 'Hi, I\'m Digital Muolana';
+        header.appendChild(icon);
+        header.appendChild(title);
+        bubble.appendChild(header);
+
+        const body = document.createElement('p');
+        body.className = 'answer-text';
+        bubble.appendChild(body);
+
+        row.appendChild(bubble);
+        messages.appendChild(row);
+        scrollBottom();
+
+        const FULL_TEXT = 'I help you understand South Sudan laws. Ask me anything about your legal rights.';
+        let i = 0;
+        const ticker = setInterval(() => {
+            body.textContent = FULL_TEXT.slice(0, ++i);
+            scrollBottom();
+            if (i < FULL_TEXT.length) return;
+            clearInterval(ticker);
+
+            const STARTERS = [
+                'Summarize for me South Sudan laws?',
+                'How do I register a business?',
+                'What does the Constitution say about rights?',
+                'Family law and marriage',
+            ];
+            const chips = document.createElement('div');
+            chips.className = 'intro-chips';
+            STARTERS.forEach(text => {
+                const chip = document.createElement('button');
+                chip.className = 'intro-chip';
+                chip.textContent = text;
+                chip.addEventListener('click', () => {
+                    chatInput.value = text;
+                    updateSendBtn();
+                    chatInput.focus();
+                });
+                chips.appendChild(chip);
+            });
+            bubble.appendChild(chips);
+
+            const note = document.createElement('div');
+            note.className = 'legal-note';
+            note.textContent = 'Legal information only. Not legal advice. Always verify with a licensed advocate.';
+            bubble.appendChild(note);
+            scrollBottom();
+        }, 16);
     }
 
     // DOM helpers

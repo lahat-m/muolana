@@ -687,6 +687,56 @@ a.citation-pill:hover {
 }
 
 /* Floating Contact Lawyer FAB  */
+/* Intro bubble */
+
+.intro-bubble {
+    max-width: 100%;
+}
+
+.intro-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.intro-icon {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.intro-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1.2;
+}
+
+.intro-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.intro-chip {
+    padding: 8px 14px;
+    border: 1.5px solid rgba(0, 182, 242, 0.30);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    background: rgba(0, 182, 242, 0.06);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    text-align: left;
+}
+
+.intro-chip:hover {
+    background: rgba(0, 182, 242, 0.12);
+    border-color: rgba(0, 182, 242, 0.50);
+}
+
+/* Floating Contact Lawyer FAB  */
 .fab {
     position: fixed;
     bottom: 84px;
