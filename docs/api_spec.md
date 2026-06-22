@@ -1,9 +1,9 @@
-# LegalBuddy (Muolana) — REST API Specification
+# Muolana — REST API Specification
 
-**Base URL:** `https://api.muolana.ss/api/v1`  
-**Auth:** `Authorization: Bearer <JWT>` on all endpoints except `/auth/**`  
+**Base URL:** `https://muolana.onrender.com/api/v1` (production) · `http://localhost:8080/api/v1` (local)  
+**Auth:** `Authorization: Bearer <JWT>` — RS256, issued by `/auth/login` or `/auth/refresh`  
 **Content-Type:** `application/json`  
-**Conventions (Siva Prasad Reddy):**
+**Conventions:**
 - Plural nouns only — no verbs in paths
 - URI versioning: `/api/v1/`
 - `POST` → `201 Created` + `Location` header
@@ -45,7 +45,7 @@
 
 ## 2. Sessions — `/api/v1/sessions`
 
-> Conversation module. `CITIZEN` or `ADMIN` role.
+> Conversation module. Open (no JWT required — sessions are anonymous by default).
 
 | Method | Path | Request body | Success | Description |
 |--------|------|-------------|---------|-------------|
@@ -59,7 +59,8 @@
 
 ## 3. Messages — `/api/v1/sessions/{sessionId}/messages`
 
-> Conversation + RAG modules. Submitting a message triggers the full RAG pipeline.
+> Conversation + RAG modules. Submitting a message triggers the full RAG pipeline.  
+> Open (no JWT required — same as sessions).
 
 | Method | Path | Request body | Success | Description |
 |--------|------|-------------|---------|-------------|
@@ -73,27 +74,51 @@
 GET /api/v1/sessions/{sessionId}/messages/{messageId}/stream
 Accept: text/event-stream
 
+data: {"type":"citation","ref":"Land Act 2009, s.18(2)","url":"https://..."}
+data: {"type":"citation","ref":"Constitution 2011, Art. 28"}
 data: {"type":"chunk","content":"Under South Sudan law..."}
 data: {"type":"chunk","content":" landlords must provide..."}
-data: {"type":"citation","ref":"Tenancy Act, Art. 18(2)"}
-data: {"type":"done","guardTriggered":false,"inputTokens":312,"outputTokens":187}
+data: {"type":"done","guardTriggered":false}
 ```
 
-> If hallucination guard fires, stream emits `{"type":"not_found","message":"..."}` instead.
+> `url` on `citation` events is optional (only present when the source document has a `sourceUrl`).  
+> If the hallucination guard fires (cosine scores below threshold), stream emits `{"type":"not_found","message":"..."}` instead of citations and chunks.  
+> On error: `{"type":"error","message":"..."}`.  
+> SSE timeout: 300 s. nginx must be configured with `proxy_buffering off` and `proxy_read_timeout 310s`.
 
-**Assistant message response shape:**
+**Synchronous structured answer (alternative to SSE):**
+
+```
+GET /api/v1/sessions/{sessionId}/messages/{messageId}/answer
+```
+
+Returns a fully typed JSON object instead of a stream. Useful for non-browser clients.
+
+```json
+{
+  "answer": "Under South Sudan law...",
+  "citations": [
+    { "law": "Land Act 2009", "article": "s.18(2)", "summary": "Landlord obligations..." }
+  ],
+  "category": "Land",
+  "disclaimer": "Legal information only, not legal advice."
+}
+```
+
+**Message response shape:**
 
 ```json
 {
   "id": "uuid",
+  "sessionId": "uuid",
   "role": "ASSISTANT",
   "content": "Under South Sudan law...",
   "lawChunksUsed": ["uuid-chunk-1", "uuid-chunk-2"],
   "cosineScores": [0.91, 0.87],
   "guardTriggered": false,
-  "model": "claude-sonnet-4-6",
-  "inputTokens": 312,
-  "outputTokens": 187,
+  "model": "gemini-2.0-flash",
+  "inputTokens": null,
+  "outputTokens": null,
   "createdAt": "2026-06-17T09:41:00Z"
 }
 ```
@@ -102,7 +127,7 @@ data: {"type":"done","guardTriggered":false,"inputTokens":312,"outputTokens":187
 
 ## 4. Lawyers — `/api/v1/lawyers`
 
-> Lawyer module. Read endpoints: `CITIZEN`. Write endpoints: `ADMIN`.
+> Lawyer module. `GET` endpoints are fully public (no JWT).
 
 ### 4.1 Directory (public read)
 
@@ -135,11 +160,11 @@ data: {"type":"done","guardTriggered":false,"inputTokens":312,"outputTokens":187
 
 | Method | Path | Request body | Success | Description |
 |--------|------|-------------|---------|-------------|
-| `POST` | `/api/v1/admin/lawyers` | `{ fullName, barNumber, locationCity, feeType, ... }` | `201` + lawyer object + `Location` | Create lawyer profile (status: PENDING) |
+| `POST` | `/api/v1/admin/lawyers` | `{ fullName, barNumber, locationCity, feeType, bio?, ... }` | `201` + lawyer object + `Location` | Create lawyer profile (status: PENDING) |
 | `GET` | `/api/v1/admin/lawyers` | `status`, `page`, `size` | `200` + paginated list | List all lawyers (any status) |
 | `GET` | `/api/v1/admin/lawyers/{lawyerId}` | — | `200` + lawyer object | Get any lawyer by id |
 | `PUT` | `/api/v1/admin/lawyers/{lawyerId}` | full lawyer object | `200` + updated | Full replace of lawyer profile |
-| `PATCH` | `/api/v1/admin/lawyers/{lawyerId}` | `{ status?, locationCity?, feeType?, ... }` | `200` + updated | Partial update |
+| `PATCH` | `/api/v1/admin/lawyers/{lawyerId}` | `{ status?, locationCity?, feeType?, bio?, ... }` | `200` + updated | Partial update |
 | `PATCH` | `/api/v1/admin/lawyers/{lawyerId}/approve` | `{}` | `200` + `{ id, status: "ACTIVE" }` | Approve pending lawyer |
 | `PATCH` | `/api/v1/admin/lawyers/{lawyerId}/suspend` | `{}` | `200` + `{ id, status: "SUSPENDED" }` | Suspend active lawyer |
 | `DELETE` | `/api/v1/admin/lawyers/{lawyerId}` | — | `204` | Permanently remove lawyer |
@@ -147,24 +172,40 @@ data: {"type":"done","guardTriggered":false,"inputTokens":312,"outputTokens":187
 | `DELETE` | `/api/v1/admin/lawyers/{lawyerId}/specialisations/{id}` | — | `204` | Remove practice area |
 | `POST` | `/api/v1/admin/lawyers/{lawyerId}/languages` | `{ language }` | `201` + `{ id, language }` | Add language |
 | `DELETE` | `/api/v1/admin/lawyers/{lawyerId}/languages/{id}` | — | `204` | Remove language |
-| `POST` | `/api/v1/admin/lawyers/{lawyerId}/contact-methods` | `{ channel, value, isPrimary }` | `201` + contact object | Add contact method |
+| `POST` | `/api/v1/admin/lawyers/{lawyerId}/contact-methods` | `{ channel, value, isPrimary }` | `201` + contact object | Add contact method (channel: PHONE, EMAIL, WHATSAPP) |
 | `DELETE` | `/api/v1/admin/lawyers/{lawyerId}/contact-methods/{id}` | — | `204` | Remove contact method |
 
 ---
 
 ## 5. Legal documents — `/api/v1/admin/legal-documents`
 
-> Admin module. `ADMIN` role only.
+> Admin module. `ADMIN` role only.  
+> Files are stored in MinIO (S3-compatible). Accepted formats: `pdf`, `docx`.
 
 | Method | Path | Request body | Success | Description |
 |--------|------|-------------|---------|-------------|
-| `POST` | `/api/v1/admin/legal-documents` | `{ title, shortName, category, versionLabel, sourceUrl }` + file upload (`multipart/form-data`) | `201` + `{ id, status: "PENDING" }` + `Location` | Upload legal document |
-| `GET` | `/api/v1/admin/legal-documents` | `status`, `category`, `page`, `size` | `200` + paginated list | List documents (filterable by status) |
+| `POST` | `/api/v1/admin/legal-documents` | `multipart/form-data`: `metadata` (JSON) + `file` | `201` + `{ id, status: "PENDING" }` + `Location` | Upload legal document |
+| `GET` | `/api/v1/admin/legal-documents` | — | `200` + paginated list | List documents (filter: `status`, `category`) |
 | `GET` | `/api/v1/admin/legal-documents/{docId}` | — | `200` + document object | Get document metadata |
+| `GET` | `/api/v1/admin/legal-documents/{docId}/file` | — | `200` + binary stream | Download raw file (PDF or DOCX) |
 | `PATCH` | `/api/v1/admin/legal-documents/{docId}/verify` | `{}` | `200` + `{ id, status: "VERIFIED" }` | Verify doc → triggers ingestion pipeline |
 | `PATCH` | `/api/v1/admin/legal-documents/{docId}/reject` | `{ rejectionReason }` | `200` + `{ id, status: "REJECTED" }` | Reject document with reason |
 | `DELETE` | `/api/v1/admin/legal-documents/{docId}` | — | `204` | Delete document and all its chunks |
-| `GET` | `/api/v1/admin/legal-documents/{docId}/chunks` | `page`, `size` | `200` + paginated list of chunks | Inspect ingested chunks |
+| `GET` | `/api/v1/admin/legal-documents/{docId}/chunks` | `page`, `size` | `200` + paginated list of chunks | Inspect ingested vector chunks |
+
+**Upload metadata fields:**
+
+```json
+{
+  "title": "Land Act 2009",
+  "shortName": "Land Act",
+  "category": "LAND",
+  "versionLabel": "2009",
+  "sourceUrl": "https://..."
+}
+```
+
+Categories: `CONSTITUTIONAL`, `CRIMINAL`, `CIVIL`, `LAND`, `FAMILY`, `COMMERCIAL`, `EMPLOYMENT`, `ADMINISTRATIVE`, `OTHER`.
 
 ---
 
@@ -189,7 +230,7 @@ data: {"type":"done","guardTriggered":false,"inputTokens":312,"outputTokens":187
 
 | Method | Path | Request body | Success | Description |
 |--------|------|-------------|---------|-------------|
-| `GET` | `/api/v1/admin/users` | `role`, `isActive`, `page`, `size` | `200` + paginated list | List all users |
+| `GET` | `/api/v1/admin/users` | — | `200` + paginated list | List all users (filter: `role`, `isActive`) |
 | `GET` | `/api/v1/admin/users/{userId}` | — | `200` + user object | Get user by id |
 | `PATCH` | `/api/v1/admin/users/{userId}` | `{ role?, isActive? }` | `200` + updated user | Change role or deactivate |
 
@@ -197,7 +238,7 @@ data: {"type":"done","guardTriggered":false,"inputTokens":312,"outputTokens":187
 
 ## 8. Standard error response shape
 
-All errors follow a consistent envelope (Siva's `ApiError` pattern):
+All errors follow a consistent envelope:
 
 ```json
 {
@@ -214,7 +255,7 @@ All errors follow a consistent envelope (Siva's `ApiError` pattern):
 
 | Status | When |
 |--------|------|
-| `400` | Malformed JSON / wrong type |
+| `400` | Malformed JSON / wrong type / unsupported file format |
 | `401` | Missing or expired JWT |
 | `403` | Valid JWT but wrong role |
 | `404` | Resource not found |
@@ -245,12 +286,15 @@ Query params: `?page=0&size=20&sort=createdAt,desc`
 
 ## 10. Security matrix
 
-| Endpoint group | `CITIZEN` | `ADMIN` | Anonymous |
-|----------------|-----------|---------|-----------|
+| Endpoint group | `CITIZEN` (JWT) | `ADMIN` (JWT) | Anonymous |
+|----------------|-----------------|----------------|-----------|
 | `/auth/**` | — | — | Open |
-| `/sessions/**` | Own only | All | — |
-| `/sessions/{id}/messages/**` | Own session | All | — |
-| `GET /lawyers/**` | Read | Read | — |
+| `/sessions/**` | Open | Open | Open |
+| `GET /lawyers`, `GET /lawyers/**` | Open | Open | Open |
 | `POST /lawyers/{id}/referrals` | Yes | — | — |
 | `POST /lawyers/{id}/reviews` | Yes | — | — |
 | `/admin/**` | — | Full | — |
+| `/actuator/health` | — | — | Open |
+| Static assets, Thymeleaf pages | — | — | Open |
+
+> Sessions and messages are open to support anonymous citizen usage — no registration required to use the chat.

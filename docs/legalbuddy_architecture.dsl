@@ -1,207 +1,177 @@
 /*
  * ============================================================
- *  DigitalMuolana (Muolana) — C4 Model Architecture
+ *  Muolana (DigitalMuolana) — C4 Model Architecture
  *  Method  : Simon Brown C4 Model
- *  Stack   : Spring Boot 3.x, Spring AI 1.1, Spring Security
- *            OAuth2/JWT, PostgreSQL + PGVector
+ *  Stack   : Spring Boot 4.0.7 · Java 25 · Spring AI 2.0.0
+ *            Spring Security OAuth2 Resource Server (RS256 JWT)
+ *            PostgreSQL 17 + pgvector · MinIO (S3-compatible)
+ *            Thymeleaf server-side rendering (mobile-first UI)
+ *  LLM     : Google Gemini (default) · Anthropic Claude · OpenAI
+ *            — switched via Spring profile (AI_PROVIDER env var)
+ *  Embed   : gemini-embedding-001 (1536 dims, COSINE_DISTANCE)
+ *  Deploy  : Docker (GHCR) → Render.com or self-hosted nginx/WSL
  *  Tool    : Structurizr DSL  https://structurizr.com/dsl
  * ============================================================
  */
 
-workspace "DigitalMuolana Muolana" "C4 architecture — South Sudan legal AI platform" {
+workspace "Muolana" "C4 architecture — South Sudan legal AI platform" {
 
     model {
 
         /* ── External actors ── */
 
-        citizen = person "Citizen" "Asks legal questions via web or mobile." {
+        citizen = person "Citizen" "Asks legal questions via the web/mobile browser." {
             tags "External"
         }
 
-        admin = person "Admin" "Uploads laws, manages lawyers, reviews analytics." {
+        admin = person "Admin" "Uploads laws, manages lawyers, reviews analytics via the admin UI." {
             tags "External"
         }
 
-        lawyer = person "Lawyer" "Receives user referrals. External actor." {
+        lawyer = person "Lawyer" "Listed in the directory; receives referrals from citizens." {
             tags "External"
         }
 
         /* ── External systems ── */
 
-        anthropicApi = softwareSystem "Anthropic Claude API" "LLM inference, streaming SSE." {
+        llmApi = softwareSystem "LLM API" "AI inference: Google Gemini (default), Anthropic Claude, or OpenAI. Selected via AI_PROVIDER env var / Spring profile. Streams tokens via SSE." {
+            tags "External"
+        }
+
+        minioStorage = softwareSystem "MinIO / Cloudflare R2" "S3-compatible object storage for uploaded legal documents (PDF, DOCX). Self-hosted MinIO in dev/prod-VPS; Cloudflare R2 on Render." {
             tags "External"
         }
 
         /* ── System under design ── */
 
-        DigitalMuolana = softwareSystem "DigitalMuolana (Muolana)" "RAG legal Q&A, lawyer directory, admin tooling." {
+        muolana = softwareSystem "Muolana" "RAG legal Q&A assistant, verified lawyer directory, and admin tooling for South Sudan law." {
             tags "Internal"
 
-            webApp = container "Web / PWA" "Mobile-first PWA. Offline via service worker." {
-                technology "React, TypeScript, Vite, IndexedDB"
-                tags "Frontend"
+            /* ── Single Spring Boot monolith ── */
+
+            app = container "Spring Boot Application" "Modular monolith: Thymeleaf UI + REST API. All modules (auth, conversation, RAG, lawyers, legal docs, analytics) run in-process." {
+                technology "Spring Boot 4.0.7 · Java 25 · Spring AI 2.0.0 · Thymeleaf · Spring MVC"
+                tags "App"
+
+                /* ── Web / UI layer ── */
+
+                webUi = component "Web / UI layer" "Thymeleaf controllers serve mobile-first HTML pages: landing, chat, lawyers directory, lawyer profile, admin dashboard, documents, analytics." {
+                    technology "Spring MVC @Controller · Thymeleaf · Vanilla JS · CSS"
+                    tags "Component"
+                }
+
+                /* ── Auth module ── */
+
+                authModule = component "Auth module" "User registration, login, JWT issuance and refresh. RS256 JWTs signed with RSA private key; validated by Spring Security OAuth2 Resource Server using public key. Rate-limited with AuthRateLimitFilter." {
+                    technology "Spring Security · OAuth2 Resource Server · BCrypt · RSA keypair"
+                    tags "Component"
+                }
+
+                /* ── Conversation module ── */
+
+                conversationModule = component "Conversation module" "Session lifecycle (create, list, delete) and message routing. Stores history in PostgreSQL. Anonymous sessions — no login required." {
+                    technology "Spring Data JPA · SessionEntity · MessageEntity"
+                    tags "Component"
+                }
+
+                /* ── RAG module ── */
+
+                ragModule = component "RAG module" "Retrieves relevant law chunks from pgvector, runs hallucination guard (cosine threshold 0.3), assembles prompt, streams LLM response as SSE tokens, records citation refs." {
+                    technology "Spring AI 2.0.0 · PgVectorStore · SseEmitter · ChatClient"
+                    tags "Component"
+                }
+
+                /* ── Lawyer module ── */
+
+                lawyerModule = component "Lawyer module" "SSLS-verified lawyer directory. Supports filtering by specialisation, location, fee type, and language. Citizen actions: referral dispatch, reviews. Admin: CRUD + approve/suspend workflow." {
+                    technology "Spring Data JPA · Spring Events · LawyerEntity"
+                    tags "Component"
+                }
+
+                /* ── Legal documents module ── */
+
+                legalDocumentsModule = component "Legal documents module" "Admin uploads PDF/DOCX → stored in MinIO. On verify, ingestion pipeline runs: Tika parse → TokenTextSplitter (512 token chunks, 64 overlap) → gemini-embedding-001 → pgvector insert." {
+                    technology "Spring AI TikaDocumentReader · TokenTextSplitter · PgVectorStore · MinIO SDK 8.5.13"
+                    tags "Component"
+                }
+
+                /* ── Analytics module ── */
+
+                analyticsModule = component "Analytics module" "Records every query with outcome (ANSWERED / NOT_FOUND / ERROR), latency, and category. Admin read endpoints: summary, top categories, knowledge gaps, session stats, lawyer referral funnel." {
+                    technology "Spring Data JPA · QueryLogEntity"
+                    tags "Component"
+                }
+
+                /* ── Shared ── */
+
+                shared = component "Shared kernel" "BaseEntity, UserId value object, PageResponse wrapper, DomainEvent, SpringEventPublisher, AssertUtil, GlobalExceptionHandler." {
+                    technology "Spring ApplicationEventPublisher · Jakarta Validation"
+                    tags "Component"
+                }
+
+                /* ── Intra-monolith relationships ── */
+
+                webUi              -> authModule            "Login, register, token refresh" "In-process"
+                webUi              -> conversationModule    "Session + message CRUD" "In-process"
+                webUi              -> lawyerModule          "Lawyer directory, referrals, reviews" "In-process"
+                webUi              -> legalDocumentsModule  "Document upload, list, file download" "In-process"
+                webUi              -> analyticsModule       "Analytics read (dashboard)" "In-process"
+
+                conversationModule -> ragModule             "Invoke RAG pipeline for user query" "In-process"
+                conversationModule -> shared                "Events, base types" "In-process"
+
+                ragModule          -> analyticsModule       "Record query outcome" "In-process"
+                ragModule          -> shared                "Events" "In-process"
+
+                legalDocumentsModule -> shared              "Events (DocIngested)" "In-process"
+                lawyerModule       -> shared                "Events (LawyerRequested)" "In-process"
             }
 
-            authServer = container "Auth server" "Issues RS256 JWTs signed with RSA private key. Validates with public key." {
-                technology "Spring Security, JJWT, RSA256 keypair"
-                tags "Auth"
-            }
+            /* ── Databases ── */
 
-            apiGateway = container "API facade" "JWT auth, rate limiting, disclaimer injection." {
-                technology "Spring Boot 3.x, Spring Security, Spring MVC"
-                tags "Api"
-            }
-
-            conversationModule = container "Conversation module" "Session lifecycle and message routing." {
-                technology "Spring Boot, Spring AI ChatMemoryAdvisor"
-                tags "Module"
-            }
-
-            ragModule = container "RAG module" "Retrieves law chunks, guards hallucinations, calls LLM." {
-                technology "Spring AI 1.1, QuestionAnswerAdvisor, PgVectorStore"
-                tags "Module"
-
-                queryProcessor = component "Query processor" "Embeds query, runs top-k PGVector search." {
-                    technology "Spring AI EmbeddingModel, PgVectorStore"
-                    tags "Component"
-                }
-
-                hallucinationGuard = component "Hallucination guard" "Blocks LLM if cosine score below 0.75." {
-                    technology "Spring @Component, cosine threshold"
-                    tags "Component"
-                }
-
-                promptBuilder = component "Prompt builder" "Assembles chunks, history and user query." {
-                    technology "Spring AI PromptTemplate, ChatMemoryAdvisor"
-                    tags "Component"
-                }
-
-                llmClient = component "LLM client" "Calls Claude API with SSE streaming." {
-                    technology "Spring AI ChatClient, Spring Retry"
-                    tags "Component"
-                }
-
-                responseFormatter = component "Response formatter" "Formats citations and disclaimer, publishes AnswerReady." {
-                    technology "Spring @Component, @TransactionalEventListener"
-                    tags "Component"
-                }
-
-                queryProcessor     -> hallucinationGuard "Chunks + scores"
-                hallucinationGuard -> promptBuilder      "Chunks above threshold"
-                hallucinationGuard -> responseFormatter  "Not-found short-circuit"
-                promptBuilder      -> llmClient          "Assembled prompt"
-                llmClient          -> responseFormatter  "Streamed LLM output"
-            }
-
-            lawyerModule = container "Lawyer module" "Verified lawyer directory and referral dispatch." {
-                technology "Spring Boot, Spring Data JPA, Spring Events"
-                tags "Module"
-            }
-
-            adminModule = container "Admin module" "Document registry, analytics, lawyer approval." {
-                technology "Spring Boot, Spring Batch, Spring Data JPA"
-                tags "Module"
-
-                documentRegistry = component "Document registry" "Tracks upload, version and verification status." {
-                    technology "Spring Data JPA, PostgreSQL"
-                    tags "Component"
-                }
-
-                ingestionPipeline = component "Ingestion pipeline" "Parse, chunk, embed and store legal docs." {
-                    technology "TikaDocumentReader, TokenTextSplitter, Spring Batch"
-                    tags "Component"
-                }
-
-                analyticsEngine = component "Analytics engine" "Query trends, knowledge gaps, funnel metrics." {
-                    technology "Spring Data JPA, PostgreSQL"
-                    tags "Component"
-                }
-
-                lawyerRegistry = component "Lawyer registry" "CRUD and approval workflow for lawyers." {
-                    technology "Spring Data JPA, PostgreSQL"
-                    tags "Component"
-                }
-
-                documentRegistry -> ingestionPipeline "Triggers on doc verified"
-            }
-
-            eventBus = container "Event bus" "In-process async events between modules." {
-                technology "Spring ApplicationEventPublisher, @TransactionalEventListener"
-                tags "Bus"
-            }
-
-            postgresql = container "PostgreSQL 16" "Sessions, users, lawyers, documents, analytics." {
-                technology "PostgreSQL 16, Spring Data JPA, Flyway"
+            postgresql = container "PostgreSQL 17 + pgvector" "All relational data: users, refresh tokens, sessions, messages, lawyers, legal documents, analytics logs. pgvector extension hosts law chunk embeddings in schema legal_documents.vector_store (1536 dims, cosine)." {
+                technology "PostgreSQL 17 · pgvector/pgvector:pg17 · Flyway migrations · Spring Data JPA"
                 tags "Database"
             }
-
-            pgvectorStore = container "PGVector store" "Law chunk embeddings, cosine similarity search." {
-                technology "pgvector 0.7+, Spring AI PgVectorStore"
-                tags "Database"
-            }
-
-            /* ── Container relationships ── */
-
-            webApp             -> authServer         "OAuth2 PKCE, token refresh" "HTTPS"
-            webApp             -> apiGateway         "REST + streaming SSE" "HTTPS"
-
-            apiGateway         -> authServer         "Validate JWT" "HTTPS"
-            apiGateway         -> conversationModule "Route message" "In-process"
-            apiGateway         -> lawyerModule       "Lawyer queries" "In-process"
-            apiGateway         -> adminModule        "Admin operations" "In-process"
-
-            conversationModule -> eventBus           "QuerySubmitted / AnswerReady" "Spring Events"
-
-            ragModule          -> eventBus           "Subscribe / publish" "Spring Events"
-            ragModule          -> pgvectorStore      "Similarity search" "JDBC"
-            ragModule          -> anthropicApi       "LLM inference" "HTTPS"
-            ragModule          -> postgresql         "Document metadata" "JDBC"
-
-            lawyerModule       -> eventBus           "LawyerRequested" "Spring Events"
-            lawyerModule       -> postgresql         "Lawyer profiles" "JDBC"
-
-            adminModule        -> eventBus           "DocIngested" "Spring Events"
-            adminModule        -> postgresql         "Registry, analytics, audit" "JDBC"
-            adminModule        -> pgvectorStore      "Write embeddings" "JDBC"
-
-            postgresql         -> pgvectorStore      "pgvector extension" "SQL"
         }
 
         /* ── System context relationships ── */
 
-        citizen -> DigitalMuolana "Legal Q&A, lawyer referral" "HTTPS"
-        admin   -> DigitalMuolana "Upload laws, manage lawyers" "HTTPS"
-        lawyer  -> DigitalMuolana "Receives referral context" "HTTPS"
+        citizen -> muolana "Legal Q&A (anonymous chat), lawyer directory, referrals" "HTTPS"
+        admin   -> muolana "Upload laws, manage lawyers, view analytics" "HTTPS"
+        lawyer  -> muolana "Listed in directory; receives referral emails" "Email / HTTPS"
+
+        muolana -> llmApi        "LLM inference (token streaming, embeddings)" "HTTPS / SSE"
+        muolana -> minioStorage  "Store & retrieve uploaded legal documents" "HTTPS (S3 API)"
+
+        /* ── Container relationships ── */
+
+        app -> postgresql    "JPA / JDBC — sessions, users, lawyers, documents, analytics, vector store" "TCP 5432"
+        app -> llmApi        "Chat completions + embeddings (Spring AI ChatClient / EmbeddingModel)" "HTTPS"
+        app -> minioStorage  "Upload / download documents (MinIO Java SDK)" "HTTPS"
     }
 
     views {
 
-        systemContext DigitalMuolana "SystemContext" {
+        systemContext muolana "SystemContext" {
             include *
             autoLayout tb
-            title "L1 - System context: DigitalMuolana (Muolana)"
-            description "Actors and external systems."
+            title "L1 — System context: Muolana"
+            description "Actors, external LLM API, and object storage."
         }
 
-        container DigitalMuolana "Containers" {
+        container muolana "Containers" {
             include *
             autoLayout tb
-            title "L2 - Containers: DigitalMuolana modular monolith"
-            description "Spring Boot modular monolith."
+            title "L2 — Containers: Muolana modular monolith"
+            description "Single Spring Boot 4.0.7 app + PostgreSQL 17 + pgvector."
         }
 
-        component ragModule "RAGComponents" {
+        component app "Components" {
             include *
             autoLayout tb
-            title "L3 - Components: RAG module"
-            description "Retrieval, hallucination guard, prompt, LLM, formatter."
-        }
-
-        component adminModule "AdminComponents" {
-            include *
-            autoLayout tb
-            title "L3 - Components: Admin module"
-            description "Document registry, ingestion pipeline, analytics, lawyer registry."
+            title "L3 — Components: Spring Boot monolith internals"
+            description "Modules inside the monolith: UI, auth, conversation, RAG, lawyers, legal docs, analytics."
         }
 
         styles {
@@ -212,15 +182,11 @@ workspace "DigitalMuolana Muolana" "C4 architecture — South Sudan legal AI pla
              *
              * Stroke key:
              *   External actors / systems  #6B7280  gray
-             *   Internal system            #1D4ED8  blue   (3px — heavier boundary)
-             *   Frontend                   #0F6E56  green
-             *   Auth                       #7C3AED  violet
-             *   API facade                 #1D4ED8  blue
-             *   Modules                    #534AB7  indigo
-             *   Event bus                  #B45309  amber
-             *   Database                   #1E40AF  dark blue
-             *   Cache                      #D85A30  coral
-             *   Components                 #3C3489  deep indigo
+             *   Internal system            #0284C7  sky blue  (3px)
+             *   App container              #0284C7  sky blue
+             *   Database container         #1E40AF  dark blue
+             *   Components                 #534AB7  indigo
+             *   Shared kernel              #64748B  slate
              */
 
             element "Element" {
@@ -249,7 +215,7 @@ workspace "DigitalMuolana Muolana" "C4 architecture — South Sudan legal AI pla
             element "softwareSystem" {
                 background "#ffffff"
                 color "#000000"
-                stroke "#1D4ED8"
+                stroke "#0284C7"
                 strokeWidth 3
                 shape RoundedBox
             }
@@ -257,48 +223,17 @@ workspace "DigitalMuolana Muolana" "C4 architecture — South Sudan legal AI pla
             element "Internal" {
                 background "#ffffff"
                 color "#000000"
-                stroke "#1D4ED8"
+                stroke "#0284C7"
                 strokeWidth 10
                 shape RoundedBox
             }
 
-            element "Frontend" {
+            element "App" {
                 background "#ffffff"
                 color "#000000"
-                stroke "#0F6E56"
-                strokeWidth 2
-                shape WebBrowser
-            }
-
-            element "Auth" {
-                background "#ffffff"
-                color "#000000"
-                stroke "#7C3AED"
+                stroke "#0284C7"
                 strokeWidth 2
                 shape RoundedBox
-            }
-
-            element "Api" {
-                background "#ffffff"
-                color "#000000"
-                stroke "#1D4ED8"
-                strokeWidth 2
-                shape RoundedBox
-            }
-
-            element "Module" {
-                color "#000000"
-                stroke "#534AB7"
-                strokeWidth 2
-                shape Component
-            }
-
-            element "Bus" {
-                background "#ffffff"
-                color "#000000"
-                stroke "#B45309"
-                strokeWidth 2
-                shape Pipe
             }
 
             element "Database" {
@@ -311,57 +246,67 @@ workspace "DigitalMuolana Muolana" "C4 architecture — South Sudan legal AI pla
 
             element "Component" {
                 color "#000000"
-                stroke "#3C3489"
+                stroke "#534AB7"
                 strokeWidth 2
                 shape Component
             }
 
-            relationship "Spring Events" {
-                style Dashed
-                color "#B45309"
-                thickness 2
-            }
-
-            relationship "HTTPS" {
-                color "#1D4ED8"
+            relationship "In-process" {
+                style Solid
+                color "#534AB7"
                 thickness 1
             }
 
-            relationship "JDBC" {
+            relationship "HTTPS" {
+                color "#0284C7"
+                thickness 1
+            }
+
+            relationship "TCP 5432" {
                 color "#1E40AF"
                 thickness 1
             }
 
+            relationship "HTTPS / SSE" {
+                style Dashed
+                color "#0284C7"
+                thickness 2
+            }
         }
 
         /*
          * ── LEVEL 4 CODE REFERENCE ──
          *
-         * @Bean VectorStore vectorStore(JdbcTemplate jdbc, EmbeddingModel em) {
-         *     return PgVectorStore.builder(jdbc, em)
-         *         .dimensions(1536)
-         *         .distanceType(COSINE_DISTANCE)
-         *         .build();
-         * }
+         * Vector store (AiConfig.java):
+         *   PgVectorStore — schema: legal_documents, table: vector_store
+         *   dimensions: 1536, distanceType: COSINE_DISTANCE
+         *   Embedding model: gemini-embedding-001 (task: RETRIEVAL_QUERY)
          *
-         * @Bean ChatClient chatClient(ChatClient.Builder b,
-         *                             VectorStore vs, ChatMemory cm) {
-         *     return b.defaultAdvisors(
-         *         new QuestionAnswerAdvisor(vs),
-         *         new MessageChatMemoryAdvisor(cm)).build();
-         * }
+         * RAG pipeline (RagPipeline.java):
+         *   hallucination threshold: app.rag.hallucination-threshold=0.3
+         *   top-k: app.rag.top-k=10
+         *   streaming: SseEmitter with 300 s timeout
          *
-         * @Bean VectorStoreDocumentIngestor ingestor(VectorStore vs) {
-         *     return VectorStoreDocumentIngestor.builder()
-         *         .documentTransformer(
-         *             new TokenTextSplitter(512, 64, 5, 10000, true))
-         *         .vectorStore(vs).build();
-         * }
+         * Ingestion (IngestionPipeline.java):
+         *   TikaDocumentReader → TokenTextSplitter(512, 64 overlap)
+         *   → EmbeddingModel → PgVectorStore
+         *   Downloads from MinIO via DocumentStorageService (try-with-resources)
          *
-         * JWT: Custom RS256. Auth server signs with RSA private key (PEM file or
-         * keystore). All other services validate using the RSA public key only.
-         * Use JJWT (io.jsonwebtoken) — Jwts.builder().signWith(privateKey, RS256).
-         * Public key distributed as PEM or JWK endpoint for resource servers.
+         * Auth (JwtTokenProvider.java):
+         *   Custom RS256 JWT, RSA keypair from PEM files
+         *   Spring Security OAuth2 Resource Server validates with public key
+         *   Access token TTL: 900 000 ms (15 min)
+         *   Refresh token TTL: 604 800 000 ms (7 days)
+         *   Rate limiting on /api/v1/auth/** via AuthRateLimitFilter
+         *
+         * Deployment:
+         *   Dockerfile: eclipse-temurin:25.0.3_9-jdk-alpine (build)
+         *              eclipse-temurin:25.0.3_9-jre-alpine  (runtime)
+         *   Image registry: ghcr.io/{owner}/muolana
+         *   Render.com: render.yaml blueprint (free tier, Cloudflare R2 for storage)
+         *   Self-hosted: docker-compose.prod.yml + nginx/nginx.conf
+         *   Health check: GET /actuator/health (Spring Boot Actuator, no auth)
+         *   PORT: injected by Render via $PORT env var → server.port=${PORT:8080}
          */
     }
 }
