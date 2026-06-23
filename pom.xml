@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<spring-ai.version>2.0.0</spring-ai.version>
+		<arconia.version>0.27.1</arconia.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -82,8 +83,13 @@
 			<artifactId>spring-ai-google-genai-embedding</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-tika-document-reader</artifactId>
+			<groupId>io.arconia</groupId>
+			<artifactId>arconia-ai-docling-document-reader</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
+			<version>2.0.13</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -153,6 +159,13 @@
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-bom</artifactId>
 				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>io.arconia</groupId>
+				<artifactId>arconia-bom</artifactId>
+				<version>${arconia.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
