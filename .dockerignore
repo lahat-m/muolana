@@ -1,0 +1,15 @@
+target/
+.git/
+.github/
+.idea/
+.agents/
+.claude/
+docs/
+uploads/
+nginx/
+*.md
+*.png
+*.http
+.env
+.env.*
+!.env.example
