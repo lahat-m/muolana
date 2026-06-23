@@ -383,7 +383,7 @@ a.citation-pill:hover {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.25);
+    background: #00B6F2;
     animation: bounce 1.2s infinite;
 }
 
@@ -673,6 +673,12 @@ a.citation-pill:hover {
 
 .recent-item:hover .recent-del-btn {
     opacity: 1;
+}
+
+@media (hover: none) {
+    .recent-del-btn {
+        opacity: 1;
+    }
 }
 
 .recent-del-btn:hover {

@@ -96,7 +96,7 @@ body.app-page {
     justify-content: center;
 }
 
-/*  Add / action button (header) */
+/*  Add / action button */
 .add-btn {
     width: 34px;
     height: 34px;
@@ -119,7 +119,7 @@ body.app-page {
     opacity: 0.85;
 }
 
-/*  Scrollable content area */
+/*  Scrollable content */
 .content-scroll {
     flex: 1;
     overflow-y: auto;
