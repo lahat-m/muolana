@@ -675,6 +675,12 @@ a.citation-pill:hover {
     opacity: 1;
 }
 
+@media (hover: none) {
+    .recent-del-btn {
+        opacity: 1;
+    }
+}
+
 .recent-del-btn:hover {
     background: rgba(0, 0, 0, 0.10);
 }
