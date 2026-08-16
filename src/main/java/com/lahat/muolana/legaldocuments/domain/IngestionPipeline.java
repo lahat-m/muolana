@@ -4,8 +4,6 @@ import com.lahat.muolana.cloud.DocumentStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -23,26 +21,21 @@ class IngestionPipeline {
     private final IngestionStatusUpdater statusUpdater;
     private final VectorStoreWriter vectorStoreWriter;
     private final DocumentStorageService storageService;
-    private final TokenTextSplitter splitter;
+    private final DoclingGateway doclingGateway;
 
     IngestionPipeline(LegalDocumentRepository documentRepository,
                       IngestionStatusUpdater statusUpdater,
                       VectorStoreWriter vectorStoreWriter,
-                      DocumentStorageService storageService) {
+                      DocumentStorageService storageService,
+                      DoclingGateway doclingGateway) {
         this.documentRepository = documentRepository;
         this.statusUpdater = statusUpdater;
         this.vectorStoreWriter = vectorStoreWriter;
         this.storageService = storageService;
-        this.splitter = TokenTextSplitter.builder()
-                .withChunkSize(512)
-                .withMinChunkSizeChars(64)
-                .withMinChunkLengthToEmbed(5)
-                .withMaxNumChunks(10000)
-                .withKeepSeparator(true)
-                .build();
+        this.doclingGateway = doclingGateway;
     }
 
-    @Async
+    @Async("ingestionExecutor")
     public void ingest(UUID docId) {
         LegalDocumentEntity doc = documentRepository.findById(docId)
                 .orElseThrow(() -> new IllegalStateException("Document not found: " + docId));
@@ -54,41 +47,51 @@ class IngestionPipeline {
         }
 
         try {
+            log.info("[INGESTION_START] Document: {} (ID: {})", doc.getShortName(), docId);
+
+            log.info("[PARSING] Downloading and parsing document: {}", doc.getShortName());
             statusUpdater.markChunking(docId);
 
             byte[] bytes;
             try (var stream = storageService.download(objectKey)) {
                 bytes = stream.readAllBytes();
             }
-            List<Document> pages = new TikaDocumentReader(new ByteArrayResource(bytes)).get();
-            String fullText = pages.stream()
-                    .map(Document::getText)
-                    .reduce("", (a, b) -> a + "\n" + b)
-                    .trim();
 
-            Document source = Document.builder()
-                    .text(fullText)
-                    .metadata(Map.of(
-                            "document_id", doc.getId().toString(),
-                            "title", doc.getTitle(),
-                            "short_name", doc.getShortName(),
-                            "category", doc.getCategory().name(),
-                            "source_url", doc.getSourceUrl() != null ? doc.getSourceUrl() : ""))
-                    .build();
+            ByteArrayResource resource = new ByteArrayResource(bytes) {
+                @Override
+                public String getFilename() {
+                    return doc.getShortName() + ".pdf";
+                }
+            };
 
-            List<Document> chunks = splitter.apply(List.of(source));
+            Map<String, Object> appMeta = Map.of(
+                    "document_id", doc.getId().toString(),
+                    "title", doc.getTitle(),
+                    "short_name", doc.getShortName(),
+                    "category", doc.getCategory().name(),
+                    "source_url", doc.getSourceUrl() != null ? doc.getSourceUrl() : "");
+
+            List<Document> chunks = doclingGateway.chunk(resource, appMeta);
+
+            if (chunks.isEmpty()) {
+                log.warn("Docling returned no chunks for document {} — file may be empty or unreadable", docId);
+                statusUpdater.markFailed(docId);
+                return;
+            }
+
+            log.info("[CHUNKING] Saving parsed chunks for document: {}", doc.getShortName());
             List<Document> toStore = statusUpdater.saveChunks(docId, chunks);
 
+            log.info("[EMBEDDING] Generating embeddings and storing in vector store for document: {}", doc.getShortName());
             statusUpdater.markEmbedding(docId);
-
             vectorStoreWriter.add(toStore);
 
             statusUpdater.markIngested(docId);
 
-            log.info("Ingested document {} — {} chunks stored", docId, toStore.size());
+            log.info("[DONE] Ingestion completed successfully for document: {} ({} chunks stored)", doc.getShortName(), toStore.size());
 
         } catch (Exception exception) {
-            log.error("Ingestion failed for document {}", docId, exception);
+            log.error("[FAILED] Ingestion failed for document: {} (ID: {})", doc.getShortName(), docId, exception);
             statusUpdater.markFailed(docId);
         }
     }

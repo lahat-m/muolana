@@ -1,6 +1,7 @@
 package com.lahat.muolana.legaldocuments.domain;
 
 import com.lahat.muolana.shared.exceptions.ResourceNotFoundException;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,7 +25,9 @@ interface LegalDocumentRepository extends JpaRepository<LegalDocumentEntity, UUI
 
     boolean existsByShortName(String shortName);
 
-    default LegalDocumentEntity getById(UUID id) {
+    java.util.Optional<LegalDocumentEntity> findByShortName(String shortName);
+
+    default @NonNull LegalDocumentEntity getById(@NonNull UUID id) {
         return findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Legal document " + id + " not found"));
     }

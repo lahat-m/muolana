@@ -36,6 +36,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+  docling:
+    image: ghcr.io/docling-project/docling-serve:latest
+    ports:
+      - "5001:5001"
+    environment:
+      - DOCLING_SERVE_MAX_SYNC_WAIT=3600
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 40s
+      retries: 3
+      start_period: 30s
+
 volumes:
   pgdata:
   minio_data:

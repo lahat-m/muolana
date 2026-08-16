@@ -33,7 +33,11 @@ build/
 .vscode/
 .agents/
 .claude/
-.env.example
+
+### Environment — NEVER commit real secrets ###
+.env
+.env.*
+!.env.example
 
 ### Keys & secrets ###
 src/main/resources/certs/
@@ -44,3 +48,14 @@ src/main/resources/certs/
 
 ### Local dev overrides (never commit) ###
 src/main/resources/application-local.properties
+
+qodana.yaml
+
+### Docker and COnfig to exclude for NOW
+docker-compose.prod.yml
+render.yaml
+renovate.json
+Taskfile.yml
+Dockerfile
+nginx
+.github

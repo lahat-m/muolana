@@ -33,8 +33,15 @@ class DocumentSeeder implements ApplicationRunner {
     @Override
     public void run(@NonNull ApplicationArguments args) {
         for (SeedDoc seed : SeedDoc.ALL) {
-            if (documentRepository.existsByShortName(seed.shortName)) {
-                log.info("Already ingested — skipping: {}", seed.shortName);
+            var existing = documentRepository.findByShortName(seed.shortName);
+            if (existing.isPresent()) {
+                DocumentStatus status = existing.get().getStatus();
+                if (status == DocumentStatus.INGESTED || status == DocumentStatus.REJECTED) {
+                    log.info("Already seeded ({}) — skipping: {}", status, seed.shortName);
+                } else {
+                    log.info("Re-queuing unfinished ingestion (status={}): {}", status, seed.shortName);
+                    ingestionPipeline.ingest(existing.get().getId());
+                }
                 continue;
             }
 
@@ -71,54 +78,6 @@ class DocumentSeeder implements ApplicationRunner {
             String versionLabel
     ) {
         static final List<SeedDoc> ALL = List.of(
-                new SeedDoc(
-                        "The-Transitional-Constitution-of-the-South-Sudan-2011.pdf",
-                        "The Transitional Constitution of the Republic of South Sudan 2011",
-                        "Constitution 2011",
-                        DocumentCategory.CONSTITUTIONAL,
-                        "2011"),
-                new SeedDoc(
-                        "Nationality-Act-2011.pdf",
-                        "Nationality Act 2011",
-                        "Nationality Act 2011",
-                        DocumentCategory.CONSTITUTIONAL,
-                        "2011"),
-                new SeedDoc(
-                        "National-Elections-Act-39-of-2012.pdf",
-                        "National Elections Act No. 39 of 2012",
-                        "National Elections Act 2012",
-                        DocumentCategory.CONSTITUTIONAL,
-                        "2012"),
-                new SeedDoc(
-                        "Land-Act-2009.pdf",
-                        "Land Act of the Republic of South Sudan 2009",
-                        "Land Act 2009",
-                        DocumentCategory.LAND,
-                        "2009"),
-                new SeedDoc(
-                        "Labour-Act-2017.pdf",
-                        "Labour Act 2017",
-                        "Labour Act 2017",
-                        DocumentCategory.EMPLOYMENT,
-                        "2017"),
-                new SeedDoc(
-                        "Advocates-Act-55-of-2013.pdf",
-                        "Advocates Act No. 55 of 2013",
-                        "Advocates Act 2013",
-                        DocumentCategory.CIVIL,
-                        "2013"),
-                new SeedDoc(
-                        "Local-Government-Act-2009.pdf",
-                        "Local Government Act 2009",
-                        "Local Government Act 2009",
-                        DocumentCategory.ADMINISTRATIVE,
-                        "2009"),
-                new SeedDoc(
-                        "National-Communication-Act-24-of-2012.pdf",
-                        "National Communications Act No. 24 of 2012",
-                        "National Communications Act 2012",
-                        DocumentCategory.ADMINISTRATIVE,
-                        "2012"),
                 new SeedDoc(
                         "National-Security-Service-Act-2014.pdf",
                         "National Security Service Act 2014",
